@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Client Settings & Seat Management</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 30px; }
+    .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); max-width: 600px; margin-bottom: 20px; }
+    .progress-bar-bg { background: #e0e0e0; height: 16px; border-radius: 8px; overflow: hidden; margin-top: 10px; }
+    .progress-bar-fill { background: #28a745; height: 100%; width: 0%; transition: width 0.3s; }
+    .progress-bar-fill.danger { background: #dc3545; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; }
+    .form-group input { width: 95%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    .btn { background: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
+    .btn:disabled { background: #6c757d; cursor: not-allowed; }
+    .alert-danger { color: #721c24; background-color: #f8d7da; padding: 10px; border-radius: 4px; margin-top: 10px; display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- Seat Usage Widget -->
+  <div class="card">
+    <h2>License & Seat Usage</h2>
+    <p id="seatText">Loading seats...</p>
+    <div class="progress-bar-bg">
+      <div id="progressFill" class="progress-bar-fill"></div>
+    </div>
+    <div id="limitAlert" class="alert-danger">
+      <strong>Seat limit reached!</strong> Upgrade your plan to add more users.
+    </div>
+  </div>
+
+  <!-- Add User Form -->
+  <div class="card">
+    <h3>Add Team Member</h3>
+    <form id="addUserForm">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="name" required>
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="email" required>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="password" required>
+      </div>
+      <button type="submit" id="addBtn" class="btn">+ Add User</button>
+    </form>
+  </div>
+
+  <script>
+    const clientId = "6ac4a40066fd9fc373a293c9"; // Set dynamic Client ID
+
+    // 1. Fetch Seats Summary Live
+    async function loadSeatSummary() {
+      const res = await fetch(`http://localhost:5000/api/client/seats-summary/${clientId}`);
+      const data = await res.json();
+
+      const percentage = (data.activeUsers / data.maxUsers) * 100;
+      document.getElementById('seatText').innerText = `Active Users: ${data.activeUsers} / ${data.maxUsers} Licenses Used`;
+      
+      const fill = document.getElementById('progressFill');
+      fill.style.width = `${percentage}%`;
+
+      if (data.isLimitReached) {
+        fill.classList.add('danger');
+        document.getElementById('limitAlert').style.display = 'block';
+        document.getElementById('addBtn').disabled = true;
+      } else {
+        fill.classList.remove('danger');
+        document.getElementById('limitAlert').style.display = 'none';
+        document.getElementById('addBtn').disabled = false;
+      }
+    }
+
+    // 2. Submit Add User Request
+    document.getElementById('addUserForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value;
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+
+      const res = await fetch('http://localhost:5000/api/client/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId, name, email, password, role: 'staff' })
+      });
+
+      const result = await res.json();
+
+      if (res.status === 201) {
+        alert('User added successfully!');
+        document.getElementById('addUserForm').reset();
+        loadSeatSummary(); // Refresh bar
+      } else {
+        alert(`Error: ${result.message || result.error}`);
+      }
+    });
+
+    // Initial Load
+    loadSeatSummary();
+  </script>
+</body>
+</html>

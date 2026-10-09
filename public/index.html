@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Client Seats & User Management</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #eef2f5; padding: 40px; }
+    .card { max-width: 650px; margin: 0 auto 20px auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .progress-container { background: #e0e0e0; border-radius: 8px; height: 18px; margin: 15px 0; overflow: hidden; }
+    .progress-bar { height: 100%; width: 0%; background: #28a745; transition: width 0.4s ease, background 0.4s ease; }
+    .progress-bar.full { background: #dc3545; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 14px; margin-bottom: 5px; color: #333; }
+    .form-group input { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px; }
+    button { width: 100%; padding: 10px; background: #007bff; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; }
+    button:disabled { background: #a5a5a5; cursor: not-allowed; }
+    .btn-danger { background: #dc3545; padding: 5px 10px; width: auto; font-size: 12px; }
+    .alert { padding: 10px; border-radius: 5px; margin-top: 10px; font-size: 14px; display: none; }
+    .alert-danger { background: #f8d7da; color: #721c24; }
+    #dashboardSection { display: none; }
+    
+    /* Table Styling */
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
+    th { background-color: #f8f9fa; }
+    .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    .badge-success { background: #d4edda; color: #155724; }
+    .badge-secondary { background: #e2e3e5; color: #383d41; }
+  </style>
+</head>
+<body>
+
+<!-- SECTION 1: LOGIN FORM -->
+<div class="card" id="loginSection">
+  <h2>Client Login</h2>
+  <form id="loginForm">
+    <div class="form-group">
+      <label>Email Address</label>
+      <input type="email" id="loginEmail" value="user1@actionlifestyle.com" required>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="loginPassword" value="admin123" required>
+    </div>
+    <button type="submit">Login</button>
+  </form>
+</div>
+
+<!-- SECTION 2: DASHBOARD SECTION -->
+<div class="card" id="dashboardSection">
+  <div style="display: flex; justify-content: space-between; align-items: center;">
+    <h2 id="companyTitle">Client Dashboard</h2>
+    <button onclick="logout()" style="width: auto; padding: 6px 12px; background: #6c757d;">Logout</button>
+  </div>
+  
+  <div id="seatInfo">Loading seats info...</div>
+  
+  <div class="progress-container">
+    <div id="progressBar" class="progress-bar"></div>
+  </div>
+
+  <div id="limitWarning" class="alert alert-danger">
+    ⚠️ Seat limit full! Upgrade your plan to add more team members.
+  </div>
+
+  <hr style="margin: 20px 0;">
+
+  <h3>Add New Team Member</h3>
+  <form id="addUserForm">
+    <div class="form-group">
+      <label>Name</label>
+      <input type="text" id="name" required>
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="email" required>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="password" required>
+    </div>
+    <button type="submit" id="submitBtn">Add User</button>
+  </form>
+
+  <hr style="margin: 20px 0;">
+
+  <h3>Active Team Members</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="usersTableBody">
+      <tr><td colspan="4">Loading users...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+  // 1. LOGIN HANDLE
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
+
+    const res = await fetch('http://localhost:5000/api/client/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await res.json();
+
+    if (res.status === 200) {
+      localStorage.setItem('jwtToken', data.token);
+      localStorage.setItem('clientId', data.user.clientId);
+      initApp();
+    } else {
+      alert(data.error || 'Login failed!');
+    }
+  });
+
+  // 2. DASHBOARD & USERS LIST UPDATE
+  async function updateDashboard() {
+    const token = localStorage.getItem('jwtToken');
+    const clientId = localStorage.getItem('clientId');
+
+    if (!token || !clientId) {
+      showLogin();
+      return;
+    }
+
+    // Fetch Seat Summary
+    const res = await fetch(`http://localhost:5000/api/client/seats-summary/${clientId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    const data = await res.json();
+
+    if (res.status !== 200) {
+      alert(data.error || 'Session expired. Please login again.');
+      logout();
+      return;
+    }
+
+    document.getElementById('companyTitle').innerText = data.companyName || 'Client Dashboard';
+    const percentage = (data.activeUsers / data.maxUsers) * 100;
+    document.getElementById('seatInfo').innerText = `Seats Used: ${data.activeUsers} / ${data.maxUsers}`;
+    
+    const bar = document.getElementById('progressBar');
+    bar.style.width = percentage + '%';
+
+    if (data.isLimitReached) {
+      bar.classList.add('full');
+      document.getElementById('limitWarning').style.display = 'block';
+      document.getElementById('submitBtn').disabled = true;
+    } else {
+      bar.classList.remove('full');
+      document.getElementById('limitWarning').style.display = 'none';
+      document.getElementById('submitBtn').disabled = false;
+    }
+
+    // Fetch Client's Users List
+    loadUsersList(clientId, token);
+  }
+
+  // 3. FETCH & RENDER USERS LIST
+  async function loadUsersList(clientId, token) {
+    const res = await fetch(`http://localhost:5000/api/client/users-list/${clientId}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    
+    const users = await res.json();
+    const tbody = document.getElementById('usersTableBody');
+    tbody.innerHTML = '';
+
+    if (!users || users.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4">No users found.</td></tr>';
+      return;
+    }
+
+    users.forEach(user => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>${user.name}</td>
+        <td>${user.email}</td>
+        <td>
+          <span class="badge ${user.isActive ? 'badge-success' : 'badge-secondary'}">
+            ${user.isActive ? 'Active' : 'Deactivated'}
+          </span>
+        </td>
+        <td>
+          ${user.isActive ? `<button onclick="deactivateUser('${user._id}')" class="btn-danger">Deactivate</button>` : '—'}
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // 4. DEACTIVATE USER ACTION
+  async function deactivateUser(userId) {
+    if (!confirm("Kya aap is user ko deactivate karke seat free karna chahte hain?")) return;
+
+    const token = localStorage.getItem('jwtToken');
+    const res = await fetch(`http://localhost:5000/api/client/users/${userId}/deactivate`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    const result = await res.json();
+    if (res.status === 200) {
+      alert('User deactivate ho gaya hai! Ek seat free ho gayi.');
+      updateDashboard();
+    } else {
+      alert(result.error || 'Deactivation failed');
+    }
+  }
+
+  // 5. ADD USER HANDLE
+  document.getElementById('addUserForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('jwtToken');
+    const clientId = localStorage.getItem('clientId');
+
+    const name = document.getElementById('name').value;
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+
+    const res = await fetch('http://localhost:5000/api/client/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ clientId, name, email, password, role: 'staff' })
+    });
+
+    const result = await res.json();
+    if (res.status === 201) {
+      alert('User successfully added!');
+      document.getElementById('addUserForm').reset();
+      updateDashboard();
+    } else {
+      alert(result.error || result.message);
+    }
+  });
+
+  function initApp() {
+    const token = localStorage.getItem('jwtToken');
+    if (token) {
+      document.getElementById('loginSection').style.display = 'none';
+      document.getElementById('dashboardSection').style.display = 'block';
+      updateDashboard();
+    } else {
+      showLogin();
+    }
+  }
+
+  function showLogin() {
+    document.getElementById('loginSection').style.display = 'block';
+    document.getElementById('dashboardSection').style.display = 'none';
+  }
+
+  function logout() {
+    localStorage.removeItem('jwtToken');
+    localStorage.removeItem('clientId');
+    showLogin();
+  }
+
+  initApp();
+</script>
+
+</body>
+</html>
