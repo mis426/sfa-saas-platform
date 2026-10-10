@@ -1,48 +1,36 @@
 import { create } from 'zustand';
+import axios from 'axios';
 
-// Helper function to safely read user object from localStorage
-const getSavedUser = () => {
-  try {
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
-  } catch (error) {
-    console.error('Failed to parse saved user from localStorage:', error);
-    return null;
-  }
-};
-
-// Helper function to safely read JWT token from localStorage
-const getSavedToken = () => {
-  return localStorage.getItem('jwt_token') || localStorage.getItem('token') || null;
-};
+// Vite env variable parse karein aur fallback me direct Render backend URL set karein
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://sfa-saas-platform.onrender.com';
 
 export const useAuthStore = create((set) => ({
-  token: getSavedToken(),
-  user: getSavedUser(),
+  user: JSON.parse(localStorage.getItem('user')) || null,
+  token: localStorage.getItem('token') || null,
+  loading: false,
+  error: null,
 
-  // Action: Set authentication token & user info in state + sync to localStorage
-  setAuth: (token, user) => {
-    if (token) {
+  login: async (credentials) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/login`, credentials);
+      const { token, user } = response.data;
+
       localStorage.setItem('token', token);
-      localStorage.setItem('jwt_token', token);
-    }
-    if (user) {
       localStorage.setItem('user', JSON.stringify(user));
+
+      set({ user, token, loading: false });
+      return { success: true };
+    } catch (error) {
+      const message = error.response?.data?.message || 'Login failed. Please check your credentials and server status.';
+      set({ error: message, loading: false });
+      return { success: false, message };
     }
-    set({ token, user });
   },
 
-  // Action: Clear token & user info from state + remove from localStorage
   logout: () => {
     localStorage.removeItem('token');
-    localStorage.removeItem('jwt_token');
     localStorage.removeItem('user');
-    set({ token: null, user: null });
+    set({ user: null, token: null });
   },
-
-  // Action: Update user profile details without affecting token
-  updateUser: (updatedUser) => {
-    localStorage.setItem('user', JSON.stringify(updatedUser));
-    set({ user: updatedUser });
-  }
 }));
