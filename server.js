@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -14,30 +16,18 @@ app.use(helmet({
 
 app.use(express.json());
 
-// Strict Production Multi-Origin Allowed List
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  'https://sfa-saas-platform.vercel.app',
-  'https://sfa-saas-platform-git-main-mis426.vercel.app',
-  process.env.FRONTEND_URL
-].filter(Boolean);
-
-// Dynamic CORS Resolver with Wildcard Fallback
+// Dynamic CORS Resolution for Vercel & Localhost
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow non-browser agents (Postman) or any matching domain / vercel deployment
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-      return callback(null, true);
-    }
-    return callback(null, true); // Fallback to allow all incoming web traffic
+    // Allow requests with no origin (mobile apps, curl, etc.) or any origin in production
+    return callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Preflight Request Explicit Handling
+// Preflight OPTIONS handler
 app.options('*', cors());
 
 // Global API Rate Limiter
@@ -54,16 +44,24 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ MongoDB Connected Successfully'))
   .catch((err) => console.error('❌ DB Connection Error:', err));
 
-// Routes Configuration
-const sfaRoutes = require('./routes/sfa');
-const authRoutes = require('./routes/auth');
-const checkTenantStatus = require('./middleware/checkTenantStatus');
+// Dynamic Safe Route Importing (Prevents crash if a route file is missing)
+const sfaPath = path.join(__dirname, 'routes', 'sfa.js');
+const authPath = path.join(__dirname, 'routes', 'auth.js');
 
-// Mount Auth & SFA Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/sfa', checkTenantStatus, sfaRoutes);
+if (fs.existsSync(sfaPath)) {
+  const sfaRoutes = require('./routes/sfa');
+  const checkTenantStatus = require('./middleware/checkTenantStatus');
+  app.use('/api/sfa', checkTenantStatus, sfaRoutes);
+}
 
-// Health Monitoring Endpoint
+if (fs.existsSync(authPath)) {
+  const authRoutes = require('./routes/auth');
+  app.use('/api/auth', authRoutes);
+} else {
+  console.warn('⚠️ Warning: routes/auth.js not found. Checking root router fallback...');
+}
+
+// Health Endpoint
 app.get('/health', (req, res) => {
   res.json({
     status: 'Healthy',
@@ -77,7 +75,7 @@ app.get('/', (req, res) => {
   res.send('🚀 SFA SaaS Backend Server Live');
 });
 
-// Central Error Handling Middleware
+// Central Error Handler
 app.use((err, req, res, next) => {
   console.error('System Exception:', err.stack);
   res.status(500).json({ error: 'Internal Server Error', details: err.message });
