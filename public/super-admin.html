@@ -42,7 +42,7 @@
   // 1. Fetch all registered clients
   async function loadClients() {
     try {
-      const res = await fetch('http://localhost:5000/api/admin/clients');
+      const res = await fetch('https://sfa-saas-platform.onrender.com/api/admin/clients');
       const clients = await res.json();
       const tbody = document.getElementById('clientsTable');
       tbody.innerHTML = '';
@@ -85,7 +85,7 @@
     }
 
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/clients/${clientId}/limit`, {
+      const res = await fetch(`https://sfa-saas-platform.onrender.com/api/admin/clients/${clientId}/limit`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ maxAllowedUsers: parseInt(newLimit) })

@@ -107,7 +107,7 @@
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
 
-    const res = await fetch('http://localhost:5000/api/client/login', {
+    const res = await fetch('https://sfa-saas-platform.onrender.com/api/client/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -135,7 +135,7 @@
     }
 
     // Fetch Seat Summary
-    const res = await fetch(`http://localhost:5000/api/client/seats-summary/${clientId}`, {
+    const res = await fetch(`https://sfa-saas-platform.onrender.com/api/client/seats-summary/${clientId}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
 
@@ -170,7 +170,7 @@
 
   // 3. FETCH & RENDER USERS LIST
   async function loadUsersList(clientId, token) {
-    const res = await fetch(`http://localhost:5000/api/client/users-list/${clientId}`, {
+    const res = await fetch(`https://sfa-saas-platform.onrender.com/api/client/users-list/${clientId}`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
@@ -206,7 +206,7 @@
     if (!confirm("Kya aap is user ko deactivate karke seat free karna chahte hain?")) return;
 
     const token = localStorage.getItem('jwtToken');
-    const res = await fetch(`http://localhost:5000/api/client/users/${userId}/deactivate`, {
+    const res = await fetch(`https://sfa-saas-platform.onrender.com/api/client/users/${userId}/deactivate`, {
       method: 'PATCH',
       headers: { 'Authorization': `Bearer ${token}` }
     });
@@ -230,7 +230,7 @@
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
 
-    const res = await fetch('http://localhost:5000/api/client/users', {
+    const res = await fetch('https://sfa-saas-platform.onrender.com/api/client/users', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
