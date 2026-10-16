@@ -3,8 +3,6 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const fs = require('fs');
-const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -19,7 +17,6 @@ app.use(express.json());
 // Dynamic CORS Resolution for Vercel & Localhost
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc.) or any origin in production
     return callback(null, true);
   },
   credentials: true,
@@ -44,21 +41,17 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ MongoDB Connected Successfully'))
   .catch((err) => console.error('❌ DB Connection Error:', err));
 
-// Dynamic Safe Route Importing (Prevents crash if a route file is missing)
-const sfaPath = path.join(__dirname, 'routes', 'sfa.js');
-const authPath = path.join(__dirname, 'routes', 'auth.js');
+// Direct Route Mounts
+const authRoutes = require('./routes/auth');
+const sfaRoutes = require('./routes/sfa');
+const checkTenantStatus = require('./middleware/checkTenantStatus');
 
-if (fs.existsSync(sfaPath)) {
-  const sfaRoutes = require('./routes/sfa');
-  const checkTenantStatus = require('./middleware/checkTenantStatus');
+// Mount routes under BOTH /api/auth AND /auth (Fixes 404 mismatch)
+app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
+
+if (sfaRoutes) {
   app.use('/api/sfa', checkTenantStatus, sfaRoutes);
-}
-
-if (fs.existsSync(authPath)) {
-  const authRoutes = require('./routes/auth');
-  app.use('/api/auth', authRoutes);
-} else {
-  console.warn('⚠️ Warning: routes/auth.js not found. Checking root router fallback...');
 }
 
 // Health Endpoint
