@@ -23,7 +23,7 @@ const SuperAdmin = () => {
 
   const fetchTenants = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/superadmin/tenants', {
+      const res = await axios.get('https://sfa-saas-platform.onrender.com/api/superadmin/tenants', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTenants(res.data);
@@ -34,7 +34,7 @@ const SuperAdmin = () => {
 
   const fetchAuditLogs = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/superadmin/audit-logs', {
+      const res = await axios.get('https://sfa-saas-platform.onrender.com/api/superadmin/audit-logs', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setAuditLogs(res.data);
@@ -62,7 +62,7 @@ const SuperAdmin = () => {
 
     try {
       await axios.post(
-        'http://localhost:5000/api/superadmin/tenants',
+        'https://sfa-saas-platform.onrender.com/api/superadmin/tenants',
         formData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -89,7 +89,7 @@ const SuperAdmin = () => {
     const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
     try {
       await axios.patch(
-        `http://localhost:5000/api/superadmin/tenants/${id}/status`,
+        `https://sfa-saas-platform.onrender.com/api/superadmin/tenants/${id}/status`,
         { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );

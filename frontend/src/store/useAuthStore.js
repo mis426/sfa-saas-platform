@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 import axios from 'axios';
 
-// Direct production Render backend URL hardcode karein (Vercel env override avoid karne ke liye)
-const API_BASE_URL = 'https://sfa-saas-platform.onrender.com';
+// Vite env variable parse karein aur fallback me direct Render backend URL set karein
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://sfa-saas-platform.onrender.com';
 
 export const useAuthStore = create((set) => ({
   user: JSON.parse(localStorage.getItem('user')) || null,

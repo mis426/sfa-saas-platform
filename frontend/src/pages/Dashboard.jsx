@@ -43,7 +43,7 @@ const Dashboard = () => {
     try {
       setLoading(true);
       setError('');
-      const res = await axios.get('http://localhost:5000/api/client/team', {
+      const res = await axios.get('https://sfa-saas-platform.onrender.com/api/client/team', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTeamData(res.data);
@@ -58,7 +58,7 @@ const Dashboard = () => {
   // Fetch Billing History
   const fetchBillingHistory = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/billing/history', {
+      const res = await axios.get('https://sfa-saas-platform.onrender.com/api/billing/history', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setBillingHistory(res.data);
@@ -82,7 +82,7 @@ const Dashboard = () => {
 
     try {
       await axios.post(
-        'http://localhost:5000/api/client/team',
+        'https://sfa-saas-platform.onrender.com/api/client/team',
         { name, email, password, role },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -112,7 +112,7 @@ const Dashboard = () => {
 
     try {
       const res = await axios.post(
-        'http://localhost:5000/api/billing/upgrade-seats',
+        'https://sfa-saas-platform.onrender.com/api/billing/upgrade-seats',
         { additionalSeats: parseInt(additionalSeats, 10), planType: 'Pro' },
         { headers: { Authorization: `Bearer ${token}` } }
       );

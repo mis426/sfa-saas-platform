@@ -68,11 +68,11 @@ const SFADashboard = () => {
       const activeToken = getAuthToken();
       const headers = { Authorization: `Bearer ${activeToken}` };
       const [analyticsRes, leadsRes, ordersRes, productsRes, visitsRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/sfa/analytics', { headers }),
-        axios.get('http://localhost:5000/api/sfa/leads', { headers }),
-        axios.get('http://localhost:5000/api/sfa/orders', { headers }),
-        axios.get('http://localhost:5000/api/sfa/products', { headers }),
-        axios.get('http://localhost:5000/api/sfa/visits', { headers })
+        axios.get('https://sfa-saas-platform.onrender.com/api/sfa/analytics', { headers }),
+        axios.get('https://sfa-saas-platform.onrender.com/api/sfa/leads', { headers }),
+        axios.get('https://sfa-saas-platform.onrender.com/api/sfa/orders', { headers }),
+        axios.get('https://sfa-saas-platform.onrender.com/api/sfa/products', { headers }),
+        axios.get('https://sfa-saas-platform.onrender.com/api/sfa/visits', { headers })
       ]);
       setAnalytics(analyticsRes.data);
       setLeads(leadsRes.data);
@@ -106,7 +106,7 @@ const SFADashboard = () => {
     setLeadMsg({ type: '', text: '' });
     try {
       await axios.post(
-        'http://localhost:5000/api/sfa/leads',
+        'https://sfa-saas-platform.onrender.com/api/sfa/leads',
         { clientName, contactPerson, phone, value: parseFloat(leadValue) || 0 },
         { headers: { Authorization: `Bearer ${getAuthToken()}` } }
       );
@@ -125,7 +125,7 @@ const SFADashboard = () => {
     e.preventDefault();
     try {
       await axios.post(
-        'http://localhost:5000/api/sfa/products',
+        'https://sfa-saas-platform.onrender.com/api/sfa/products',
         { name: prodName, sku: prodSku, price: prodPrice, stock: prodStock },
         { headers: { Authorization: `Bearer ${getAuthToken()}` } }
       );
@@ -142,7 +142,7 @@ const SFADashboard = () => {
     try {
       const pName = selectedProductId ? (products.find(p => p._id === selectedProductId)?.name || customProductName) : customProductName;
       await axios.post(
-        'http://localhost:5000/api/sfa/orders',
+        'https://sfa-saas-platform.onrender.com/api/sfa/orders',
         {
           customerName,
           items: [{ 
@@ -177,7 +177,7 @@ const SFADashboard = () => {
       async (pos) => {
         try {
           await axios.post(
-            'http://localhost:5000/api/sfa/checkin',
+            'https://sfa-saas-platform.onrender.com/api/sfa/checkin',
             {
               clientName: gpsClientName || 'Field Visit Check-In',
               lat: pos.coords.latitude,
