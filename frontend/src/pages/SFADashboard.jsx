@@ -1,25 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { 
-  ShoppingBag, 
-  Target, 
-  DollarSign, 
   UserPlus, 
   ShoppingCart, 
   RefreshCw,
   MapPin,
   Package,
-  Download,
   Search,
   Layers,
   Store,
   Network,
   Users,
-  ShieldCheck,
-  Building2,
-  CheckCircle2,
-  Plus
+  Settings as SettingsIcon
 } from 'lucide-react';
 
 const getAuthToken = () => {
@@ -72,7 +66,6 @@ const SFADashboard = () => {
   // Retailer Mapping Form
   const [retName, setRetName] = useState('');
   const [retOwner, setRetOwner] = useState('');
-  const [retPhone, setRetPhone] = useState('');
   const [selectedDistributor, setSelectedDistributor] = useState('');
 
   const fetchSFAData = async () => {
@@ -159,7 +152,7 @@ const SFADashboard = () => {
   const handleAddRetailer = (e) => {
     e.preventDefault();
     setRetailers([...retailers, { _id: 'ret_' + Date.now(), storeName: retName, owner: retOwner, distributor: selectedDistributor }]);
-    setRetName(''); setRetOwner(''); setRetPhone(''); setSelectedDistributor('');
+    setRetName(''); setRetOwner(''); setSelectedDistributor('');
   };
 
   const handleGPSCheckIn = () => {
@@ -232,6 +225,27 @@ const SFADashboard = () => {
               {tab.icon} {tab.label}
             </button>
           ))}
+
+          {/* System Settings Link */}
+          {isAdmin && (
+            <Link
+              to="/settings"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '10px 12px',
+                borderRadius: '6px',
+                color: '#38bdf8',
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: 'bold',
+                marginTop: '12px'
+              }}
+            >
+              <SettingsIcon size={18} /> System Settings
+            </Link>
+          )}
         </div>
 
         <div style={{ padding: '16px', borderTop: '1px solid #1e293b', fontSize: '12px', color: '#64748b' }}>
@@ -239,14 +253,14 @@ const SFADashboard = () => {
         </div>
       </div>
 
-      {/* Main Panel Workspace */}
+      {/* Main Workspace Panel */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         
-        {/* Top Header */}
+        {/* Top Header Bar */}
         <div style={{ backgroundColor: '#fff', padding: '12px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', backgroundColor: '#f1f5f9', padding: '8px 12px', borderRadius: '6px', width: '280px' }}>
             <Search size={16} color="#94a3b8" />
-            <input type="text" placeholder="Search accounts, SKUs, distributors..." style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px', width: '100%' }} />
+            <input type="text" placeholder="Search accounts, SKUs..." style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px', width: '100%' }} />
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -256,10 +270,10 @@ const SFADashboard = () => {
           </div>
         </div>
 
-        {/* Dynamic Content Views */}
+        {/* Workspace Content Views */}
         <div style={{ padding: '24px', flex: 1 }}>
           
-          {/* KPI Analytics */}
+          {/* Top KPI Metrics */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
             <div style={{ backgroundColor: '#fff', padding: '16px 20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
               <div style={{ color: '#64748b', fontSize: '12px', fontWeight: 'bold' }}>TOTAL REVENUE</div>
@@ -279,11 +293,10 @@ const SFADashboard = () => {
             </div>
           </div>
 
-          {/* TAB 1: EXECUTIVE SUMMARY */}
+          {/* Lead & Order Forms */}
           {(activeTab === 'overview' || activeTab === 'leads' || activeTab === 'orders') && (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '24px' }}>
               
-              {/* Lead Form */}
               <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                 <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <UserPlus size={18} color="#2563eb" /> Log Retailer Prospect Lead
@@ -297,7 +310,6 @@ const SFADashboard = () => {
                 </form>
               </div>
 
-              {/* Order Form */}
               <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                 <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <ShoppingCart size={18} color="#16a34a" /> Primary Order Booking
@@ -321,7 +333,7 @@ const SFADashboard = () => {
             </div>
           )}
 
-          {/* TAB 2: MASTER SKU CATALOG (RESTRICTED TO CLIENT ADMIN ONLY) */}
+          {/* Master SKU Catalog View */}
           {(activeTab === 'overview' || activeTab === 'products') && (
             <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -376,7 +388,7 @@ const SFADashboard = () => {
             </div>
           )}
 
-          {/* TAB 3: RETAILER & DISTRIBUTOR MAPPING ENGINE */}
+          {/* Retailer & Distributor Network Mapping View */}
           {(activeTab === 'network') && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px', marginBottom: '24px' }}>
               
@@ -422,7 +434,7 @@ const SFADashboard = () => {
             </div>
           )}
 
-          {/* TAB 4: SALES TEAM TOP-BOTTOM HIERARCHY */}
+          {/* Sales Team Hierarchy View */}
           {(activeTab === 'hierarchy') && (
             <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
               <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -449,7 +461,7 @@ const SFADashboard = () => {
             </div>
           )}
 
-          {/* TAB 5: GEO-TRACKING CHECKIN */}
+          {/* Geo Tracking View */}
           {(activeTab === 'overview' || activeTab === 'checkin') && (
             <div style={{ backgroundColor: '#1e293b', color: '#fff', padding: '16px 20px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>

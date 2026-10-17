@@ -9,11 +9,9 @@ require('dotenv').config();
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || 'saas_super_secret_jwt_key_2026';
 
-// Security Headers
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(express.json());
 
-// Universal Dynamic CORS Resolution
 app.use(cors({
   origin: function (origin, callback) { return callback(null, true); },
   credentials: true,
@@ -23,17 +21,15 @@ app.use(cors({
 
 app.options('*', cors());
 
-// Global API Rate Limiter
 const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 200 });
 app.use('/api/', apiLimiter);
 
-// Database Connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/saas_monetization_db';
 mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ MongoDB Connected Successfully'))
   .catch((err) => console.error('❌ DB Connection Error:', err));
 
-// Global Stores with Seeded Admin & Field User Accounts
+// Global Stores with Seeded Accounts & Feature Toggles
 global.tenantsStore = global.tenantsStore || [
   {
     _id: 'tenant_acme_default',
@@ -59,6 +55,19 @@ global.clientUsersStore = global.clientUsersStore || [
     createdAt: new Date()
   }
 ];
+
+global.sfaModulesStore = global.sfaModulesStore || {
+  leaveManagement: true,
+  expenses: true,
+  tasks: true,
+  orders: true,
+  clients: true,
+  chat: true,
+  photos: true,
+  forms: true,
+  advances: true,
+  conveyances: true
+};
 
 global.auditLogsStore = global.auditLogsStore || [];
 global.billingHistoryStore = global.billingHistoryStore || [];
@@ -86,18 +95,16 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// Universal Auth Endpoint
+// Auth Endpoint
 app.post(['/api/auth/login', '/auth/login'], (req, res) => {
   const { email, password } = req.body;
   
-  // 1. SuperAdmin Check
   if (email === 'superadmin@admin.com' && password === 'adminpassword123') {
     const user = { email, role: 'superadmin', name: 'System Super Admin' };
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
     return res.json({ success: true, token, user });
   }
 
-  // 2. Client Admin Check
   const foundTenant = global.tenantsStore.find(
     t => t.clientAdminEmail?.toLowerCase() === email?.toLowerCase() && t.clientAdminPassword === password
   );
@@ -113,7 +120,6 @@ app.post(['/api/auth/login', '/auth/login'], (req, res) => {
     return res.json({ success: true, token, user });
   }
 
-  // 3. Field Sales User Check (balwant@acme.com)
   const foundUser = global.clientUsersStore.find(
     u => u.email?.toLowerCase() === email?.toLowerCase() && u.password === password
   );
@@ -132,7 +138,20 @@ app.post(['/api/auth/login', '/auth/login'], (req, res) => {
   return res.status(401).json({ error: 'Invalid email or password' });
 });
 
-// Client Team & Billing Endpoints
+// Settings & Module Toggles Endpoints
+app.get('/api/settings/modules', authenticateToken, (req, res) => {
+  res.json(global.sfaModulesStore);
+});
+
+app.post('/api/settings/modules', authenticateToken, (req, res) => {
+  if (req.user?.role !== 'admin' && req.user?.role !== 'superadmin') {
+    return res.status(403).json({ error: 'Only Client Admin can update module settings' });
+  }
+  global.sfaModulesStore = { ...global.sfaModulesStore, ...req.body };
+  res.json({ success: true, message: 'Module settings updated successfully!', modules: global.sfaModulesStore });
+});
+
+// Client Team & Billing
 app.get('/api/client/team', authenticateToken, (req, res) => {
   const userEmail = req.user.email;
   const tenant = global.tenantsStore.find(t => t.clientAdminEmail?.toLowerCase() === userEmail?.toLowerCase());
