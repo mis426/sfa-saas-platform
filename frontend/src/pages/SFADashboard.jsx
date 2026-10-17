@@ -17,7 +17,7 @@ import {
 
 // Safe Auth Hook with Fallback to localStorage
 const getAuthToken = () => {
-  return localStorage.getItem('jwt_token') || localStorage.getItem('token') || '';
+  return localStorage.getItem('token') || localStorage.getItem('jwt_token') || '';
 };
 
 const SFADashboard = () => {
