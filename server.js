@@ -69,6 +69,15 @@ global.sfaModulesStore = global.sfaModulesStore || {
   conveyances: true
 };
 
+global.sfaAttendanceRulesStore = global.sfaAttendanceRulesStore || {
+  gracePeriodMinutes: 15,
+  strictMode: true,
+  autoCheckoutTime: '19:00',
+  geofenceRadiusMeters: 200,
+  preventEarlyPunchOut: true,
+  allowManualPunch: false
+};
+
 global.auditLogsStore = global.auditLogsStore || [];
 global.billingHistoryStore = global.billingHistoryStore || [];
 global.sfaLeadsStore = global.sfaLeadsStore || [];
@@ -149,6 +158,19 @@ app.post('/api/settings/modules', authenticateToken, (req, res) => {
   }
   global.sfaModulesStore = { ...global.sfaModulesStore, ...req.body };
   res.json({ success: true, message: 'Module settings updated successfully!', modules: global.sfaModulesStore });
+});
+
+// Attendance Rules Endpoints
+app.get('/api/settings/attendance-rules', authenticateToken, (req, res) => {
+  res.json(global.sfaAttendanceRulesStore);
+});
+
+app.post('/api/settings/attendance-rules', authenticateToken, (req, res) => {
+  if (req.user?.role !== 'admin' && req.user?.role !== 'superadmin') {
+    return res.status(403).json({ error: 'Only Client Admin can update attendance rules' });
+  }
+  global.sfaAttendanceRulesStore = { ...global.sfaAttendanceRulesStore, ...req.body };
+  res.json({ success: true, message: 'Attendance rules updated successfully!', rules: global.sfaAttendanceRulesStore });
 });
 
 // Client Team & Billing

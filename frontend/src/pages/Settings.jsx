@@ -6,6 +6,9 @@ const Settings = () => {
   const { user } = useAuthStore();
   const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'superadmin';
 
+  const [activeSubTab, setActiveSubTab] = useState('modules');
+  
+  // Modules State
   const [modules, setModules] = useState({
     leaveManagement: true,
     expenses: true,
@@ -19,31 +22,41 @@ const Settings = () => {
     conveyances: true
   });
 
-  const [activeSubTab, setActiveSubTab] = useState('modules');
-  const [loading, setLoading] = useState(true);
+  // Attendance Rules State
+  const [attendanceRules, setAttendanceRules] = useState({
+    gracePeriodMinutes: 15,
+    strictMode: true,
+    autoCheckoutTime: '19:00',
+    geofenceRadiusMeters: 200,
+    preventEarlyPunchOut: true,
+    allowManualPunch: false
+  });
+
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
 
-  const fetchModules = async () => {
+  const fetchSettings = async () => {
     try {
-      setLoading(true);
       const token = localStorage.getItem('token');
-      const res = await axios.get('https://sfa-saas-platform.onrender.com/api/settings/modules', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setModules(res.data);
+      const headers = { Authorization: `Bearer ${token}` };
+
+      const [modRes, attRes] = await Promise.all([
+        axios.get('https://sfa-saas-platform.onrender.com/api/settings/modules', { headers }).catch(() => ({ data: modules })),
+        axios.get('https://sfa-saas-platform.onrender.com/api/settings/attendance-rules', { headers }).catch(() => ({ data: attendanceRules }))
+      ]);
+
+      if (modRes.data) setModules(modRes.data);
+      if (attRes.data) setAttendanceRules(attRes.data);
     } catch (err) {
-      console.error('Fetch modules error:', err);
-    } finally {
-      setLoading(false);
+      console.error('Fetch settings error:', err);
     }
   };
 
   useEffect(() => {
-    fetchModules();
+    fetchSettings();
   }, []);
 
-  const handleToggle = (key) => {
+  const handleToggleModule = (key) => {
     if (!isAdmin) return;
     setModules(prev => ({ ...prev, [key]: !prev[key] }));
   };
@@ -53,7 +66,7 @@ const Settings = () => {
     setMsg({ type: '', text: '' });
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post(
+      await axios.post(
         'https://sfa-saas-platform.onrender.com/api/settings/modules',
         modules,
         { headers: { Authorization: `Bearer ${token}` } }
@@ -61,6 +74,24 @@ const Settings = () => {
       setMsg({ type: 'success', text: '🎉 Module configuration saved successfully!' });
     } catch (err) {
       setMsg({ type: 'error', text: err.response?.data?.error || 'Failed to save settings.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveAttendanceRules = async () => {
+    setSaving(true);
+    setMsg({ type: '', text: '' });
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        'https://sfa-saas-platform.onrender.com/api/settings/attendance-rules',
+        attendanceRules,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMsg({ type: 'success', text: '🎉 Attendance rules saved successfully!' });
+    } catch (err) {
+      setMsg({ type: 'error', text: err.response?.data?.error || 'Failed to save attendance rules.' });
     } finally {
       setSaving(false);
     }
@@ -82,9 +113,9 @@ const Settings = () => {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
       
-      {/* Settings Sub-Menu Sidebar */}
+      {/* Sub-Menu Sidebar */}
       <div style={{ width: '220px', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0', padding: '20px 12px' }}>
-        <h3 style={{ fontSize: '13px', color: '#64748b', textTransform: 'uppercase', marginBottom: '16px', paddingLeft: '8px', fontWeight: 'bold' }}>Settings</h3>
+        <h3 style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', marginBottom: '16px', paddingLeft: '8px', fontWeight: 'bold' }}>Settings</h3>
         {[
           { id: 'modules', label: '🎛️ Feature Modules' },
           { id: 'attendance', label: '⏰ Attendance Rules' },
@@ -94,7 +125,7 @@ const Settings = () => {
         ].map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveSubTab(tab.id)}
+            onClick={() => { setActiveSubTab(tab.id); setMsg({ type: '', text: '' }); }}
             style={{
               width: '100%',
               textAlign: 'left',
@@ -114,72 +145,160 @@ const Settings = () => {
         ))}
       </div>
 
-      {/* Main Settings Body */}
+      {/* Main Panel Content */}
       <div style={{ flex: 1, padding: '32px' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-            <div>
-              <h1 style={{ margin: 0, fontSize: '24px', color: '#0f172a' }}>Platform Modules Control</h1>
-              <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-                Enable/Disable different modules on the admin panel and Employee App.
-              </p>
-            </div>
-            {isAdmin && (
-              <button
-                onClick={handleSaveModules}
-                disabled={saving}
-                style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
-              >
-                {saving ? 'Saving...' : 'Save Configuration'}
-              </button>
-            )}
-          </div>
-
           {msg.text && (
             <div style={{ padding: '12px', borderRadius: '6px', marginBottom: '20px', backgroundColor: msg.type === 'success' ? '#f0fdf4' : '#fef2f2', color: msg.type === 'success' ? '#16a34a' : '#dc2626', fontSize: '13px' }}>
               {msg.text}
             </div>
           )}
 
-          {/* Module List Toggles */}
-          <div style={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-            {moduleList.map((m, idx) => (
-              <div
-                key={m.key}
-                style={{
-                  display: 'flex',
-                  justify: 'space-between',
-                  alignItems: 'center',
-                  padding: '16px 20px',
-                  borderBottom: idx === moduleList.length - 1 ? 'none' : '1px solid #f1f5f9'
-                }}
-              >
+          {/* TAB 1: FEATURE MODULES */}
+          {activeSubTab === 'modules' && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <div>
-                  <div style={{ fontWeight: 'bold', color: '#0f172a', fontSize: '14px' }}>{m.label}</div>
-                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{m.desc}</div>
+                  <h1 style={{ margin: 0, fontSize: '24px', color: '#0f172a' }}>Platform Modules Control</h1>
+                  <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
+                    Enable/Disable different modules on the admin panel and Employee App.
+                  </p>
+                </div>
+                {isAdmin && (
+                  <button
+                    onClick={handleSaveModules}
+                    disabled={saving}
+                    style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
+                  >
+                    {saving ? 'Saving...' : 'Save Configuration'}
+                  </button>
+                )}
+              </div>
+
+              <div style={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                {moduleList.map((m, idx) => (
+                  <div
+                    key={m.key}
+                    style={{
+                      display: 'flex',
+                      justify: 'space-between',
+                      alignItems: 'center',
+                      padding: '16px 20px',
+                      borderBottom: idx === moduleList.length - 1 ? 'none' : '1px solid #f1f5f9'
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 'bold', color: '#0f172a', fontSize: '14px' }}>{m.label}</div>
+                      <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>{m.desc}</div>
+                    </div>
+
+                    <div
+                      onClick={() => handleToggleModule(m.key)}
+                      style={{
+                        width: '46px',
+                        height: '24px',
+                        backgroundColor: modules[m.key] ? '#2563eb' : '#cbd5e1',
+                        borderRadius: '12px',
+                        padding: '2px',
+                        cursor: isAdmin ? 'pointer' : 'not-allowed',
+                        transition: 'background-color 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justify: modules[m.key] ? 'flex-end' : 'flex-start'
+                      }}
+                    >
+                      <div style={{ width: '20px', height: '20px', backgroundColor: '#fff', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+
+          {/* TAB 2: ATTENDANCE & GEO-FENCE RULES */}
+          {activeSubTab === 'attendance' && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <div>
+                  <h1 style={{ margin: 0, fontSize: '24px', color: '#0f172a' }}>Attendance & Compliance Rules</h1>
+                  <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
+                    Configure punching grace periods, auto checkout times, and geo-fence strict boundaries.
+                  </p>
+                </div>
+                {isAdmin && (
+                  <button
+                    onClick={handleSaveAttendanceRules}
+                    disabled={saving}
+                    style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
+                  >
+                    {saving ? 'Saving...' : 'Save Attendance Rules'}
+                  </button>
+                )}
+              </div>
+
+              <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Grace Period (Minutes)</label>
+                    <input 
+                      type="number" 
+                      value={attendanceRules.gracePeriodMinutes} 
+                      onChange={(e) => setAttendanceRules({...attendanceRules, gracePeriodMinutes: parseInt(e.target.value, 10) || 0})}
+                      disabled={!isAdmin}
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Geo-fence Boundary Radius (Meters)</label>
+                    <input 
+                      type="number" 
+                      value={attendanceRules.geofenceRadiusMeters} 
+                      onChange={(e) => setAttendanceRules({...attendanceRules, geofenceRadiusMeters: parseInt(e.target.value, 10) || 0})}
+                      disabled={!isAdmin}
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Auto Sign-Out Time</label>
+                    <input 
+                      type="time" 
+                      value={attendanceRules.autoCheckoutTime} 
+                      onChange={(e) => setAttendanceRules({...attendanceRules, autoCheckoutTime: e.target.value})}
+                      disabled={!isAdmin}
+                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
+                    />
+                  </div>
                 </div>
 
-                <div
-                  onClick={() => handleToggle(m.key)}
-                  style={{
-                    width: '46px',
-                    height: '24px',
-                    backgroundColor: modules[m.key] ? '#2563eb' : '#cbd5e1',
-                    borderRadius: '12px',
-                    padding: '2px',
-                    cursor: isAdmin ? 'pointer' : 'not-allowed',
-                    transition: 'background-color 0.2s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: modules[m.key] ? 'flex-end' : 'flex-start'
-                  }}
-                >
-                  <div style={{ width: '20px', height: '20px', backgroundColor: '#fff', borderRadius: '50%', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }}></div>
+                <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: isAdmin ? 'pointer' : 'not-allowed' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={attendanceRules.strictMode} 
+                      onChange={(e) => setAttendanceRules({...attendanceRules, strictMode: e.target.checked})}
+                      disabled={!isAdmin}
+                    />
+                    <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a' }}>Geo-Fence Strict Mode (Reject punch-in if outside store boundary)</span>
+                  </label>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: isAdmin ? 'pointer' : 'not-allowed' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={attendanceRules.preventEarlyPunchOut} 
+                      onChange={(e) => setAttendanceRules({...attendanceRules, preventEarlyPunchOut: e.target.checked})}
+                      disabled={!isAdmin}
+                    />
+                    <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a' }}>Prevent Early Punch-Out before shift completion</span>
+                  </label>
                 </div>
+
               </div>
-            ))}
-          </div>
+            </>
+          )}
 
         </div>
       </div>
