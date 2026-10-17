@@ -12,10 +12,15 @@ import {
   Printer,
   Package,
   Download,
-  Plus
+  Search,
+  Bell,
+  CheckCircle2,
+  Calendar,
+  Layers,
+  FileText,
+  Users
 } from 'lucide-react';
 
-// Safe Auth Hook with Fallback to localStorage
 const getAuthToken = () => {
   return localStorage.getItem('token') || localStorage.getItem('jwt_token') || '';
 };
@@ -36,15 +41,15 @@ const SFADashboard = () => {
   const [products, setProducts] = useState([]);
   const [visits, setVisits] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview', 'leads', 'products', 'orders', 'checkin'
 
-  // Form States - Lead
+  // Forms
   const [clientName, setClientName] = useState('');
   const [contactPerson, setContactPerson] = useState('');
   const [phone, setPhone] = useState('');
   const [leadValue, setLeadValue] = useState('');
   const [leadMsg, setLeadMsg] = useState({ type: '', text: '' });
 
-  // Form States - Order
   const [customerName, setCustomerName] = useState('');
   const [selectedProductId, setSelectedProductId] = useState('');
   const [customProductName, setCustomProductName] = useState('');
@@ -52,13 +57,11 @@ const SFADashboard = () => {
   const [unitPrice, setUnitPrice] = useState('');
   const [orderMsg, setOrderMsg] = useState({ type: '', text: '' });
 
-  // Form States - Product SKU
   const [prodName, setProdName] = useState('');
   const [prodSku, setProdSku] = useState('');
   const [prodPrice, setProdPrice] = useState('');
   const [prodStock, setProdStock] = useState('');
 
-  // GPS Check-In State
   const [gpsStatus, setGpsStatus] = useState('');
   const [gpsClientName, setGpsClientName] = useState('');
 
@@ -90,7 +93,6 @@ const SFADashboard = () => {
     fetchSFAData();
   }, []);
 
-  // Handle Product Select change
   const handleProductSelect = (e) => {
     const prodId = e.target.value;
     setSelectedProductId(prodId);
@@ -111,10 +113,7 @@ const SFADashboard = () => {
         { headers: { Authorization: `Bearer ${getAuthToken()}` } }
       );
       setLeadMsg({ type: 'success', text: 'Lead recorded successfully!' });
-      setClientName('');
-      setContactPerson('');
-      setPhone('');
-      setLeadValue('');
+      setClientName(''); setContactPerson(''); setPhone(''); setLeadValue('');
       fetchSFAData();
     } catch (err) {
       setLeadMsg({ type: 'error', text: 'Failed to record lead.' });
@@ -154,89 +153,79 @@ const SFADashboard = () => {
         },
         { headers: { Authorization: `Bearer ${getAuthToken()}` } }
       );
-      setOrderMsg({ type: 'success', text: 'Order placed & stock updated!' });
-      setCustomerName('');
-      setSelectedProductId('');
-      setCustomProductName('');
-      setQuantity(1);
-      setUnitPrice('');
+      setOrderMsg({ type: 'success', text: 'Order placed successfully!' });
+      setCustomerName(''); setSelectedProductId(''); setCustomProductName(''); setQuantity(1); setUnitPrice('');
       fetchSFAData();
     } catch (err) {
       setOrderMsg({ type: 'error', text: 'Failed to place order.' });
     }
   };
 
-  // GPS Check-In Execution
   const handleGPSCheckIn = () => {
     if (!navigator.geolocation) {
-      setGpsStatus('Geolocation is not supported by your browser.');
+      setGpsStatus('Geolocation not supported');
       return;
     }
-    setGpsStatus('Capturing current GPS coordinates...');
+    setGpsStatus('Capturing GPS...');
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         try {
           await axios.post(
             'https://sfa-saas-platform.onrender.com/api/sfa/checkin',
             {
-              clientName: gpsClientName || 'Field Visit Check-In',
+              clientName: gpsClientName || 'Store Check-In',
               lat: pos.coords.latitude,
               lng: pos.coords.longitude,
-              notes: `Checked in via browser GPS (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`
+              notes: `Field Visit Check-In (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`
             },
             { headers: { Authorization: `Bearer ${getAuthToken()}` } }
           );
-          setGpsStatus(`✓ Check-In Success! (Lat: ${pos.coords.latitude.toFixed(4)}, Lng: ${pos.coords.longitude.toFixed(4)})`);
+          setGpsStatus(`✓ Check-In Success! (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`);
           setGpsClientName('');
           fetchSFAData();
         } catch (err) {
-          setGpsStatus('Failed to log GPS check-in on server.');
+          setGpsStatus('Failed to log check-in.');
         }
       },
-      (err) => setGpsStatus(`GPS Error: ${err.message}`)
+      (err) => setGpsStatus(`Error: ${err.message}`)
     );
   };
 
-  // Printable Invoice Function
   const handlePrintInvoice = (order) => {
     const printWin = window.open('', '_blank');
     printWin.document.write(`
       <html>
         <head>
-          <title>Invoice #${order._id.slice(-6)}</title>
+          <title>FieldAssist Invoice #${order._id.slice(-6)}</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 40px; color: #1e293b; }
-            .header { border-bottom: 2px solid #2563eb; padding-bottom: 10px; margin-bottom: 20px; }
-            .table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            .table th, .table td { border: 1px solid #cbd5e1; padding: 10px; text-align: left; }
-            .table th { background: #f8fafc; }
-            .total { text-align: right; margin-top: 20px; font-size: 18px; color: #16a34a; }
+            body { font-family: Inter, sans-serif; padding: 40px; color: #0f172a; }
+            .brand { color: #0284c7; font-weight: bold; font-size: 24px; }
+            .table { width: 100%; border-collapse: collapse; margin-top: 24px; }
+            .table th, .table td { border: 1px solid #e2e8f0; padding: 12px; text-align: left; }
+            .table th { background: #f8fafc; font-size: 13px; color: #475569; }
+            .total { text-align: right; margin-top: 24px; font-size: 20px; font-weight: bold; color: #16a34a; }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h2>SALES INVOICE</h2>
-            <p><strong>Invoice ID:</strong> #${order._id.toString().toUpperCase()}</p>
-            <p><strong>Date:</strong> ${new Date(order.createdAt).toLocaleDateString()}</p>
-            <p><strong>Customer:</strong> ${order.customerName}</p>
-          </div>
+          <div class="brand">FieldAssist Sales Invoice</div>
+          <p style="color: #64748b; margin-top: 4px;">Order ID: #${order._id.toString().toUpperCase()}</p>
+          <p><strong>Customer:</strong> ${order.customerName}</p>
+          <p><strong>Date:</strong> ${new Date(order.createdAt).toLocaleDateString()}</p>
           <table class="table">
             <thead>
-              <tr><th>Item</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr>
+              <tr><th>Item Description</th><th>Quantity</th><th>Unit Price</th><th>Subtotal</th></tr>
             </thead>
             <tbody>
               ${order.items.map(i => `
                 <tr>
                   <td>${i.productName}</td>
                   <td>${i.quantity}</td>
-                  <td>$${i.unitPrice}</td>                   <td>$${i.quantity * i.unitPrice}</td>
+                  <td>$${i.unitPrice}</td> <td>$${i.quantity * i.unitPrice}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
-          <div class="total">
-            <strong>Grand Total: $${order.totalAmount}</strong>
-          </div>
+          <div class="total">Total Amount: $${order.totalAmount}</div>
         </body>
       </html>
     `);
@@ -244,7 +233,6 @@ const SFADashboard = () => {
     printWin.print();
   };
 
-  // Export CSV Functionality
   const exportOrdersToCSV = () => {
     if (!orders.length) return alert('No orders available to export!');
     const headers = ['Order ID,Customer Name,Total Amount ($),Created Date\n'];
@@ -253,216 +241,281 @@ const SFADashboard = () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.setAttribute('href', url);
-    a.setAttribute('download', `SFA_Orders_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+    a.setAttribute('download', `FieldAssist_Orders_${new Date().toISOString().slice(0, 10)}.csv`);
     a.click();
   };
 
   return (
-    <div style={{ fontFamily: 'sans-serif', backgroundColor: '#f8fafc', minHeight: '100vh', padding: '32px 20px' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f1f5f9', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      
+      {/* FieldAssist Navy Sidebar Navigation */}
+      <div style={{ width: '240px', backgroundColor: '#0f172a', color: '#94a3b8', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '20px', borderBottom: '1px solid #1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold' }}>FA</div>
+          <div>
+            <div style={{ color: '#fff', fontWeight: 'bold', fontSize: '16px' }}>FieldAssist</div>
+            <div style={{ fontSize: '11px', color: '#64748b' }}>Sales Enterprise</div>
+          </div>
+        </div>
+
+        <div style={{ padding: '16px 12px', flex: 1 }}>
+          <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', textTransform: 'uppercase', marginBottom: '8px', paddingLeft: '8px' }}>CORE SFA MODULES</div>
+          
+          <button onClick={() => setActiveTab('overview')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'overview' ? '#0284c7' : 'transparent', color: activeTab === 'overview' ? '#fff' : '#94a3b8', cursor: 'pointer', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>
+            <Layers size={18} /> Executive Summary
+          </button>
+
+          <button onClick={() => setActiveTab('leads')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'leads' ? '#0284c7' : 'transparent', color: activeTab === 'leads' ? '#fff' : '#94a3b8', cursor: 'pointer', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>
+            <UserPlus size={18} /> Lead Pipeline
+          </button>
+
+          <button onClick={() => setActiveTab('products')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'products' ? '#0284c7' : 'transparent', color: activeTab === 'products' ? '#fff' : '#94a3b8', cursor: 'pointer', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>
+            <Package size={18} /> SKU Catalog
+          </button>
+
+          <button onClick={() => setActiveTab('orders')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'orders' ? '#0284c7' : 'transparent', color: activeTab === 'orders' ? '#fff' : '#94a3b8', cursor: 'pointer', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>
+            <ShoppingCart size={18} /> Order Management
+          </button>
+
+          <button onClick={() => setActiveTab('checkin')} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '6px', border: 'none', backgroundColor: activeTab === 'checkin' ? '#0284c7' : 'transparent', color: activeTab === 'checkin' ? '#fff' : '#94a3b8', cursor: 'pointer', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>
+            <MapPin size={18} /> Field GPS Tracking
+          </button>
+        </div>
+
+        <div style={{ padding: '16px', borderTop: '1px solid #1e293b', fontSize: '12px', color: '#64748b' }}>
+          <div>Sync Status: <span style={{ color: '#22c55e', fontWeight: 'bold' }}>Online</span></div>
+        </div>
+      </div>
+
+      {/* Main FieldAssist Workspace */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
         
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <div>
-            <h1 style={{ fontSize: '26px', color: '#0f172a', margin: '0 0 4px 0' }}>
-              Sales Force Automation (SFA) Enterprise Hub
-            </h1>
-            <p style={{ color: '#64748b', margin: 0 }}>Leads tracking, SKU product catalog, field GPS visits, and order invoicing.</p>
+        {/* Top Header Bar */}
+        <div style={{ backgroundColor: '#fff', padding: '12px 24px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', backgroundColor: '#f8fafc', padding: '8px 12px', borderRadius: '6px', border: '1px solid #e2e8f0', width: '300px' }}>
+            <Search size={16} color="#94a3b8" />
+            <input type="text" placeholder="Search leads, outlets, orders..." style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13px', width: '100%' }} />
           </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <button 
-              onClick={exportOrdersToCSV} 
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', backgroundColor: '#fff', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', color: '#16a34a' }}
-            >
-              <Download size={16} /> Export Orders CSV
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button onClick={exportOrdersToCSV} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', backgroundColor: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>
+              <Download size={15} /> Export CSV
             </button>
-            <button 
-              onClick={fetchSFAData} 
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', backgroundColor: '#fff', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', color: '#334155' }}
-            >
-              <RefreshCw size={16} /> Refresh SFA
+            <button onClick={fetchSFAData} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', backgroundColor: '#fff', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: '600', cursor: 'pointer', fontSize: '13px' }}>
+              <RefreshCw size={15} /> Sync Data
             </button>
           </div>
         </div>
 
-        {/* Analytics KPI Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '32px' }}>
-          <div style={{ background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <span style={{ color: '#64748b', fontSize: '12px' }}>Total Revenue</span>
-            <h2 style={{ fontSize: '22px', color: '#16a34a', margin: '6px 0 0 0' }}>${analytics.totalRevenue.toLocaleString()}</h2>
-          </div>
-          <div style={{ background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <span style={{ color: '#64748b', fontSize: '12px' }}>Orders Placed</span>
-            <h2 style={{ fontSize: '22px', color: '#2563eb', margin: '6px 0 0 0' }}>{analytics.totalOrdersCount}</h2>
-          </div>
-          <div style={{ background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <span style={{ color: '#64748b', fontSize: '12px' }}>Active Leads</span>
-            <h2 style={{ fontSize: '22px', color: '#d97706', margin: '6px 0 0 0' }}>{analytics.totalLeads}</h2>
-          </div>
-          <div style={{ background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <span style={{ color: '#64748b', fontSize: '12px' }}>Conversion Rate</span>
-            <h2 style={{ fontSize: '22px', color: '#9333ea', margin: '6px 0 0 0' }}>{analytics.conversionRate}%</h2>
-          </div>
-          <div style={{ background: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <span style={{ color: '#64748b', fontSize: '12px' }}>GPS Field Check-ins</span>
-            <h2 style={{ fontSize: '22px', color: '#0284c7', margin: '6px 0 0 0' }}>{analytics.visitsCount}</h2>
-          </div>
-        </div>
-
-        {/* GPS Field Check-In Banner */}
-        <div style={{ background: '#0f172a', color: '#fff', padding: '20px', borderRadius: '8px', marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h3 style={{ margin: '0 0 6px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <MapPin size={20} color="#38bdf8" /> Field Sales Rep Live GPS Check-In
-            </h3>
-            <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Log instant geolocation check-ins during on-site customer visits.</p>
-          </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <input 
-              type="text" 
-              placeholder="Client / Location Name" 
-              value={gpsClientName} 
-              onChange={(e) => setGpsClientName(e.target.value)} 
-              style={{ padding: '8px 12px', border: '1px solid #334155', borderRadius: '6px', background: '#1e293b', color: '#fff', fontSize: '13px' }} 
-            />
-            <button onClick={handleGPSCheckIn} style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <MapPin size={16} /> Submit Check-In
-            </button>
-          </div>
-        </div>
-        {gpsStatus && <p style={{ fontSize: '12px', color: '#0284c7', marginTop: '-20px', marginBottom: '24px', fontWeight: 'bold' }}>{gpsStatus}</p>}
-
-        {/* Action Forms Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '32px' }}>
+        {/* Content View Container */}
+        <div style={{ padding: '24px', flex: 1 }}>
           
-          {/* Create Sales Lead */}
-          <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <UserPlus size={16} color="#2563eb" /> Log Sales Lead
-            </h3>
-            {leadMsg.text && <div style={{ padding: '6px', fontSize: '11px', marginBottom: '8px', backgroundColor: leadMsg.type === 'success' ? '#f0fdf4' : '#fef2f2', color: leadMsg.type === 'success' ? '#16a34a' : '#dc2626' }}>{leadMsg.text}</div>}
-            <form onSubmit={handleCreateLead} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <input type="text" placeholder="Company Name" value={clientName} onChange={(e) => setClientName(e.target.value)} required style={{ padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-              <input type="text" placeholder="Contact Person" value={contactPerson} onChange={(e) => setContactPerson(e.target.value)} required style={{ padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-              <input type="text" placeholder="Phone Number" value={phone} onChange={(e) => setPhone(e.target.value)} required style={{ padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-              <input type="number" placeholder="Est. Deal Value ($)" value={leadValue} onChange={(e) => setLeadValue(e.target.value)} required style={{ padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-              <button type="submit" style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '8px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Save Lead</button>
-            </form>
-          </div>
-
-          {/* Catalog SKU Management */}
-          <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Package size={16} color="#d97706" /> Add Product SKU
-            </h3>
-            <form onSubmit={handleCreateProduct} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <input type="text" placeholder="Product Name" value={prodName} onChange={(e) => setProdName(e.target.value)} required style={{ padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-              <input type="text" placeholder="SKU Code" value={prodSku} onChange={(e) => setProdSku(e.target.value)} required style={{ padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input type="number" placeholder="Price ($)" value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} required style={{ flex: 1, padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-                <input type="number" placeholder="Stock Qty" value={prodStock} onChange={(e) => setProdStock(e.target.value)} required style={{ flex: 1, padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
+          {/* FieldAssist KPIs Header Card Group */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+            
+            <div style={{ backgroundColor: '#fff', padding: '16px 20px', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: '12px', fontWeight: '600' }}>
+                <span>TOTAL REVENUE</span>
+                <DollarSign size={18} color="#16a34a" />
               </div>
-              <button type="submit" style={{ backgroundColor: '#d97706', color: '#fff', border: 'none', padding: '8px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Add SKU to Catalog</button>
-            </form>
-          </div>
-
-          {/* Place Order */}
-          <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <ShoppingCart size={16} color="#16a34a" /> Place Sales Order
-            </h3>
-            {orderMsg.text && <div style={{ padding: '6px', fontSize: '11px', marginBottom: '8px', backgroundColor: orderMsg.type === 'success' ? '#f0fdf4' : '#fef2f2', color: orderMsg.type === 'success' ? '#16a34a' : '#dc2626' }}>{orderMsg.text}</div>}
-            <form onSubmit={handleCreateOrder} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <input type="text" placeholder="Customer Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} required style={{ padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-              <select value={selectedProductId} onChange={handleProductSelect} style={{ padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px' }}>
-                <option value="">-- Select SKU from Catalog --</option>
-                {products.map(p => (
-                  <option key={p._id} value={p._id}>{p.name} ({p.sku}) - ${p.price} [Stock: {p.stock}]</option>
-                ))}
-              </select>
-              {!selectedProductId && (
-                <input type="text" placeholder="Or enter product name manually" value={customProductName} onChange={(e) => setCustomProductName(e.target.value)} required style={{ padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-              )}
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input type="number" min="1" placeholder="Qty" value={quantity} onChange={(e) => setQuantity(e.target.value)} required style={{ flex: 1, padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
-                <input type="number" placeholder="Unit Price ($)" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} required style={{ flex: 1, padding: '8px', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', marginTop: '8px' }}>
+                ${analytics.totalRevenue.toLocaleString()}
               </div>
-              <button type="submit" style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '8px', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Submit Order</button>
-            </form>
+              <div style={{ fontSize: '11px', color: '#16a34a', marginTop: '4px', fontWeight: 'bold' }}>⬆ 12.5% vs last week</div>
+            </div>
+
+            <div style={{ backgroundColor: '#fff', padding: '16px 20px', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: '12px', fontWeight: '600' }}>
+                <span>PRIMARY ORDERS</span>
+                <ShoppingCart size={18} color="#0284c7" />
+              </div>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', marginTop: '8px' }}>
+                {analytics.totalOrdersCount}
+              </div>
+              <div style={{ fontSize: '11px', color: '#0284c7', marginTop: '4px', fontWeight: 'bold' }}>Invoices Generated</div>
+            </div>
+
+            <div style={{ backgroundColor: '#fff', padding: '16px 20px', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: '12px', fontWeight: '600' }}>
+                <span>ACTIVE PIPELINE</span>
+                <Target size={18} color="#d97706" />
+              </div>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', marginTop: '8px' }}>
+                {analytics.totalLeads}
+              </div>
+              <div style={{ fontSize: '11px', color: '#d97706', marginTop: '4px', fontWeight: 'bold' }}>{analytics.conversionRate}% Conversion Rate</div>
+            </div>
+
+            <div style={{ backgroundColor: '#fff', padding: '16px 20px', borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b', fontSize: '12px', fontWeight: '600' }}>
+                <span>GPS STORE VISITS</span>
+                <MapPin size={18} color="#9333ea" />
+              </div>
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', marginTop: '8px' }}>
+                {analytics.visitsCount}
+              </div>
+              <div style={{ fontSize: '11px', color: '#9333ea', marginTop: '4px', fontWeight: 'bold' }}>Field Rep Verified</div>
+            </div>
+
           </div>
 
-        </div>
+          {/* Field GPS Check-In Action Header */}
+          <div style={{ backgroundColor: '#1e293b', color: '#fff', padding: '16px 20px', borderRadius: '8px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={{ fontWeight: 'bold', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <MapPin size={18} color="#38bdf8" /> Field Representative Geo-Fence Check-In
+              </div>
+              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>Capture verified location coordinates for store check-in.</div>
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input 
+                type="text" 
+                placeholder="Outlet / Store Name" 
+                value={gpsClientName} 
+                onChange={(e) => setGpsClientName(e.target.value)} 
+                style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #334155', backgroundColor: '#0f172a', color: '#fff', fontSize: '13px' }} 
+              />
+              <button onClick={handleGPSCheckIn} style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>
+                Check In Now
+              </button>
+            </div>
+          </div>
+          {gpsStatus && <div style={{ fontSize: '12px', color: '#0284c7', marginTop: '-16px', marginBottom: '20px', fontWeight: 'bold' }}>{gpsStatus}</div>}
 
-        {/* Data Tables */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-          
-          {/* Orders & Print Invoice Table */}
-          <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <h3 style={{ margin: '0 0 12px 0', color: '#1e293b', fontSize: '16px' }}>🛒 Placed Orders & Invoices</h3>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                  <th style={{ padding: '8px' }}>Order ID</th>
-                  <th style={{ padding: '8px' }}>Customer</th>
-                  <th style={{ padding: '8px' }}>Amount</th>
-                  <th style={{ padding: '8px' }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.length === 0 ? (
-                  <tr><td colSpan="4" style={{ textAlign: 'center', padding: '12px', color: '#94a3b8' }}>No orders placed.</td></tr>
-                ) : (
-                  orders.map((o) => (
-                    <tr key={o._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '8px', fontWeight: 'bold' }}>#{o._id.slice(-6)}</td>
-                      <td style={{ padding: '8px' }}>{o.customerName}</td>
-                      <td style={{ padding: '8px', fontWeight: 'bold', color: '#16a34a' }}>${o.totalAmount}</td>
-                      <td style={{ padding: '8px' }}>
-                        <button onClick={() => handlePrintInvoice(o)} style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', fontWeight: 'bold' }}>
-                          <Printer size={12}/> Invoice
-                        </button>
-                      </td>
-                    </tr>
-                  ))
+          {/* Action Modules Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+            
+            {/* Sales Lead Form */}
+            <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '15px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <UserPlus size={18} color="#0284c7" /> Log Outlet Lead
+              </h3>
+              {leadMsg.text && <div style={{ padding: '8px', borderRadius: '4px', fontSize: '12px', marginBottom: '12px', backgroundColor: leadMsg.type === 'success' ? '#f0fdf4' : '#fef2f2', color: leadMsg.type === 'success' ? '#16a34a' : '#dc2626' }}>{leadMsg.text}</div>}
+              <form onSubmit={handleCreateLead} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <input type="text" placeholder="Store / Retailer Name" value={clientName} onChange={(e) => setClientName(e.target.value)} required style={{ padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                <input type="text" placeholder="Contact Owner Name" value={contactPerson} onChange={(e) => setContactPerson(e.target.value)} required style={{ padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                <input type="text" placeholder="Mobile Number" value={phone} onChange={(e) => setPhone(e.target.value)} required style={{ padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                <input type="number" placeholder="Est. Monthly Target ($)" value={leadValue} onChange={(e) => setLeadValue(e.target.value)} required style={{ padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                <button type="submit" style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>Save Lead Entry</button>
+              </form>
+            </div>
+
+            {/* Catalog SKU Entry */}
+            <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '15px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Package size={18} color="#d97706" /> Add Product SKU
+              </h3>
+              <form onSubmit={handleCreateProduct} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <input type="text" placeholder="SKU Title Name" value={prodName} onChange={(e) => setProdName(e.target.value)} required style={{ padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                <input type="text" placeholder="SKU Code / Barcode" value={prodSku} onChange={(e) => setProdSku(e.target.value)} required style={{ padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <input type="number" placeholder="PTR ($)" value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} required style={{ flex: 1, padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                  <input type="number" placeholder="Stock Qty" value={prodStock} onChange={(e) => setProdStock(e.target.value)} required style={{ flex: 1, padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                </div>
+                <button type="submit" style={{ backgroundColor: '#d97706', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>Add SKU to Catalog</button>
+              </form>
+            </div>
+
+            {/* Order Placement */}
+            <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: '15px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShoppingCart size={18} color="#16a34a" /> Primary Order Booking
+              </h3>
+              {orderMsg.text && <div style={{ padding: '8px', borderRadius: '4px', fontSize: '12px', marginBottom: '12px', backgroundColor: orderMsg.type === 'success' ? '#f0fdf4' : '#fef2f2', color: orderMsg.type === 'success' ? '#16a34a' : '#dc2626' }}>{orderMsg.text}</div>}
+              <form onSubmit={handleCreateOrder} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <input type="text" placeholder="Customer Outlet Name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} required style={{ padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                <select value={selectedProductId} onChange={handleProductSelect} style={{ padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#fff', fontSize: '13px' }}>
+                  <option value="">-- Select SKU Catalog Item --</option>
+                  {products.map(p => (
+                    <option key={p._id} value={p._id}>{p.name} ({p.sku}) - ${p.price}</option>
+                  ))}
+                </select>
+                {!selectedProductId && (
+                  <input type="text" placeholder="Or type product name" value={customProductName} onChange={(e) => setCustomProductName(e.target.value)} required style={{ padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
                 )}
-              </tbody>
-            </table>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <input type="number" min="1" placeholder="Cases/Qty" value={quantity} onChange={(e) => setQuantity(e.target.value)} required style={{ flex: 1, padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                  <input type="number" placeholder="Price ($)" value={unitPrice} onChange={(e) => setUnitPrice(e.target.value)} required style={{ flex: 1, padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} />
+                </div>
+                <button type="submit" style={{ backgroundColor: '#16a34a', color: '#fff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}>Confirm Order Booking</button>
+              </form>
+            </div>
+
           </div>
 
-          {/* GPS Visits Log Table */}
-          <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-            <h3 style={{ margin: '0 0 12px 0', color: '#1e293b', fontSize: '16px' }}>📍 Field Check-In Logs</h3>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '12px' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                  <th style={{ padding: '8px' }}>Client/Site</th>
-                  <th style={{ padding: '8px' }}>Coordinates</th>
-                  <th style={{ padding: '8px' }}>Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visits.length === 0 ? (
-                  <tr><td colSpan="3" style={{ textAlign: 'center', padding: '12px', color: '#94a3b8' }}>No GPS visits recorded.</td></tr>
-                ) : (
-                  visits.map((v) => (
-                    <tr key={v._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '8px', fontWeight: 'bold' }}>{v.clientName}</td>
-                      <td style={{ padding: '8px', fontFamily: 'monospace', color: '#0284c7' }}>
-                        {v.location?.lat?.toFixed(4)}, {v.location?.lng?.toFixed(4)}
-                      </td>
-                      <td style={{ padding: '8px', color: '#64748b' }}>
-                        {new Date(v.checkInTime || v.createdAt).toLocaleTimeString()}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          {/* Tables Section */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+            
+            {/* Orders Table */}
+            <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <div style={{ fontWeight: 'bold', color: '#0f172a', marginBottom: '16px', fontSize: '15px' }}>🛒 Placed Primary Orders</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
+                    <th style={{ padding: '10px', textAlign: 'left' }}>Order ID</th>
+                    <th style={{ padding: '10px', textAlign: 'left' }}>Customer</th>
+                    <th style={{ padding: '10px', textAlign: 'left' }}>Value</th>
+                    <th style={{ padding: '10px', textAlign: 'center' }}>Invoice</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {orders.length === 0 ? (
+                    <tr><td colSpan="4" style={{ textAlign: 'center', padding: '16px', color: '#94a3b8' }}>No order transactions recorded.</td></tr>
+                  ) : (
+                    orders.map((o) => (
+                      <tr key={o._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '10px', fontWeight: 'bold', fontFamily: 'monospace' }}>#{o._id.slice(-6)}</td>
+                        <td style={{ padding: '10px' }}>{o.customerName}</td>
+                        <td style={{ padding: '10px', fontWeight: 'bold', color: '#16a34a' }}>${o.totalAmount}</td>
+                        <td style={{ padding: '10px', textAlign: 'center' }}>
+                          <button onClick={() => handlePrintInvoice(o)} style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}>
+                            Print
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Checkin Logs Table */}
+            <div style={{ backgroundColor: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+              <div style={{ fontWeight: 'bold', color: '#0f172a', marginBottom: '16px', fontSize: '15px' }}>📍 Verified Field GPS Logs</div>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
+                    <th style={{ padding: '10px', textAlign: 'left' }}>Outlet / Site</th>
+                    <th style={{ padding: '10px', textAlign: 'left' }}>Coordinates</th>
+                    <th style={{ padding: '10px', textAlign: 'left' }}>Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visits.length === 0 ? (
+                    <tr><td colSpan="3" style={{ textAlign: 'center', padding: '16px', color: '#94a3b8' }}>No GPS visits logged today.</td></tr>
+                  ) : (
+                    visits.map((v) => (
+                      <tr key={v._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '10px', fontWeight: 'bold' }}>{v.clientName}</td>
+                        <td style={{ padding: '10px', fontFamily: 'monospace', color: '#0284c7' }}>
+                          {v.location?.lat?.toFixed(4)}, {v.location?.lng?.toFixed(4)}
+                        </td>
+                        <td style={{ padding: '10px', color: '#64748b' }}>
+                          {new Date(v.checkInTime || v.createdAt).toLocaleTimeString()}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
           </div>
 
         </div>
 
       </div>
+
     </div>
   );
 };
