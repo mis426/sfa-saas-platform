@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { 
   Users, 
@@ -13,8 +14,16 @@ import {
 } from 'lucide-react';
 
 const Dashboard = () => {
+  const navigate = useNavigate();
   const { token, user } = useAuthStore();
-  
+
+  // Role Restriction Guard: Standard field reps (USER) are redirected to SFA Hub
+  useEffect(() => {
+    if (user && user.role?.toLowerCase() === 'user') {
+      navigate('/sfa', { replace: true });
+    }
+  }, [user, navigate]);
+
   const [teamData, setTeamData] = useState({ 
     tenantName: '', 
     maxAllowedUsers: 0, 
@@ -366,7 +375,7 @@ const Dashboard = () => {
           )}
         </div>
 
-        {/* Subscription Billing & Invoices Table */}
+        {/* Subscription Billing History Table */}
         <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
           <h3 style={{ marginTop: 0, color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <History size={20} color="#2563eb" /> Subscription Billing History

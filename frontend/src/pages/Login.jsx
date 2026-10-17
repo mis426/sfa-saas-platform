@@ -1,169 +1,97 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const setAuth = useAuthStore((state) => state.setAuth);
+  const navigate = useNavigate();
+  const { setAuth } = useAuthStore();
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError('');
+    setErrorMsg('');
     setLoading(true);
 
     try {
-      // Backend authentication API call
-      const res = await axios.post('https://sfa-saas-platform.onrender.com/api/auth/login', { 
-        email, 
-        password 
+      const res = await axios.post('https://sfa-saas-platform.onrender.com/api/auth/login', {
+        email,
+        password
       });
 
-      const { token, user } = res.data;
+      if (res.data.success) {
+        const { token, user } = res.data;
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
 
-      // LocalStorage update
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
+        if (setAuth) setAuth(user, token);
 
-      // Zustand global state update
-      if (setAuth) {
-        setAuth(token, user);
-      }
-
-      // Direct full page reload redirect to ensure clean route mounting
-      if (user && user.role === 'superadmin') {
-        window.location.href = '/super-admin';
-      } else {
-        window.location.href = '/dashboard';
+        // Direct Routing Logic Based on Role
+        const role = user.role?.toLowerCase();
+        if (role === 'superadmin') {
+          navigate('/superadmin');
+        } else if (role === 'admin') {
+          navigate('/dashboard'); // Client Admin goes to Billing & Team Management
+        } else {
+          navigate('/sfa'); // Standard Field Rep (balwant@acme.com) goes directly to SFA Hub
+        }
       }
     } catch (err) {
-      console.error('Login error:', err);
-      const errorMessage = err.response?.data?.error || 'Login failed. Please check your credentials and server status.';
-      setError(errorMessage);
+      setErrorMsg(err.response?.data?.error || 'Invalid email or password');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '100vh',
-      backgroundColor: '#f4f6f8',
-      fontFamily: 'sans-serif'
-    }}>
-      <form onSubmit={handleLogin} style={{
-        background: '#ffffff',
-        padding: '32px',
-        borderRadius: '8px',
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-        width: '100%',
-        maxWidth: '360px'
-      }}>
-        <h2 style={{
-          textAlign: 'center',
-          marginBottom: '24px',
-          color: '#1e293b',
-          fontSize: '22px',
-          fontWeight: '600'
-        }}>
-          SaaS Portal Login
-        </h2>
-
-        {error && (
-          <div style={{
-            background: '#fef2f2',
-            color: '#dc2626',
-            padding: '12px',
-            borderRadius: '6px',
-            fontSize: '13px',
-            marginBottom: '18px',
-            border: '1px solid #fecaca',
-            textAlign: 'center'
-          }}>
-            {error}
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#f1f5f9', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ backgroundColor: '#fff', padding: '32px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', width: '380px' }}>
+        <h2 style={{ textAlign: 'center', margin: '0 0 20px 0', color: '#0f172a', fontSize: '20px' }}>SaaS Portal Login</h2>
+        
+        {errorMsg && (
+          <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '10px', borderRadius: '6px', fontSize: '13px', marginBottom: '16px', textAlign: 'center' }}>
+            {errorMsg}
           </div>
         )}
 
-        <div style={{ marginBottom: '16px' }}>
-          <label style={{
-            display: 'block',
-            marginBottom: '6px',
-            fontSize: '13px',
-            color: '#475569',
-            fontWeight: '500'
-          }}>
-            Email Address
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="superadmin@admin.com"
-            required
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              borderRadius: '6px',
-              border: '1px solid #cbd5e1',
-              fontSize: '14px',
-              boxSizing: 'border-box',
-              outline: 'none'
-            }}
-          />
-        </div>
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: '#475569', marginBottom: '4px', fontWeight: '500' }}>Email Address</label>
+            <input 
+              type="email" 
+              value={email} 
+              onChange={(e) => setEmail(e.target.value)} 
+              required 
+              placeholder="e.g. balwant@acme.com"
+              style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }} 
+            />
+          </div>
 
-        <div style={{ marginBottom: '24px' }}>
-          <label style={{
-            display: 'block',
-            marginBottom: '6px',
-            fontSize: '13px',
-            color: '#475569',
-            fontWeight: '500'
-          }}>
-            Password
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••••••"
-            required
-            style={{
-              width: '100%',
-              padding: '10px 12px',
-              borderRadius: '6px',
-              border: '1px solid #cbd5e1',
-              fontSize: '14px',
-              boxSizing: 'border-box',
-              outline: 'none'
-            }}
-          />
-        </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: '#475569', marginBottom: '4px', fontWeight: '500' }}>Password</label>
+            <input 
+              type="password" 
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
+              required 
+              placeholder="••••••••"
+              style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }} 
+            />
+          </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          style={{
-            width: '100%',
-            padding: '12px',
-            background: loading ? '#93c5fd' : '#2563eb',
-            color: '#ffffff',
-            border: 'none',
-            borderRadius: '6px',
-            fontWeight: '600',
-            fontSize: '15px',
-            cursor: loading ? 'not-allowed' : 'pointer'
-          }}
-        >
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
+          <button 
+            type="submit" 
+            disabled={loading}
+            style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', marginTop: '6px' }}
+          >
+            {loading ? 'Authenticating...' : 'Login'}
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
