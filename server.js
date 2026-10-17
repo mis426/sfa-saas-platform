@@ -33,10 +33,34 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ MongoDB Connected Successfully'))
   .catch((err) => console.error('❌ DB Connection Error:', err));
 
-// Global Memory Stores for Fail-safe Execution
-global.tenantsStore = global.tenantsStore || [];
+// Global Stores with Seeded Admin & Field User Accounts
+global.tenantsStore = global.tenantsStore || [
+  {
+    _id: 'tenant_acme_default',
+    companyName: 'Acme Corp',
+    maxAllowedUsers: 5,
+    activeUsersCount: 2,
+    status: 'active',
+    clientAdminName: 'John Doe',
+    clientAdminEmail: 'clientadmin@acme.com',
+    clientAdminPassword: 'acmepassword123',
+    createdAt: new Date()
+  }
+];
+
+global.clientUsersStore = global.clientUsersStore || [
+  {
+    _id: 'user_balwant_1',
+    tenantId: 'tenant_acme_default',
+    name: 'Balwant Singh',
+    email: 'balwant@acme.com',
+    password: 'balwant',
+    role: 'user',
+    createdAt: new Date()
+  }
+];
+
 global.auditLogsStore = global.auditLogsStore || [];
-global.clientUsersStore = global.clientUsersStore || [];
 global.billingHistoryStore = global.billingHistoryStore || [];
 global.sfaLeadsStore = global.sfaLeadsStore || [];
 global.sfaProductsStore = global.sfaProductsStore || [];
@@ -62,21 +86,45 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// Unified Auth Endpoint
+// Universal Auth Endpoint
 app.post(['/api/auth/login', '/auth/login'], (req, res) => {
   const { email, password } = req.body;
+  
+  // 1. SuperAdmin Check
   if (email === 'superadmin@admin.com' && password === 'adminpassword123') {
     const user = { email, role: 'superadmin', name: 'System Super Admin' };
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
     return res.json({ success: true, token, user });
   }
 
+  // 2. Client Admin Check
   const foundTenant = global.tenantsStore.find(
     t => t.clientAdminEmail?.toLowerCase() === email?.toLowerCase() && t.clientAdminPassword === password
   );
 
   if (foundTenant) {
-    const user = { email: foundTenant.clientAdminEmail, role: 'admin', tenantId: foundTenant._id, companyName: foundTenant.companyName };
+    const user = { 
+      email: foundTenant.clientAdminEmail, 
+      role: 'admin', 
+      tenantId: foundTenant._id, 
+      companyName: foundTenant.companyName 
+    };
+    const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
+    return res.json({ success: true, token, user });
+  }
+
+  // 3. Field Sales User Check (balwant@acme.com)
+  const foundUser = global.clientUsersStore.find(
+    u => u.email?.toLowerCase() === email?.toLowerCase() && u.password === password
+  );
+
+  if (foundUser) {
+    const user = { 
+      email: foundUser.email, 
+      role: foundUser.role || 'user', 
+      tenantId: foundUser.tenantId,
+      name: foundUser.name
+    };
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
     return res.json({ success: true, token, user });
   }
@@ -84,13 +132,13 @@ app.post(['/api/auth/login', '/auth/login'], (req, res) => {
   return res.status(401).json({ error: 'Invalid email or password' });
 });
 
-// Client Endpoints
+// Client Team & Billing Endpoints
 app.get('/api/client/team', authenticateToken, (req, res) => {
   const userEmail = req.user.email;
   const tenant = global.tenantsStore.find(t => t.clientAdminEmail?.toLowerCase() === userEmail?.toLowerCase());
   const tenantName = tenant ? tenant.companyName : 'Acme Corp';
   const maxAllowedUsers = tenant ? tenant.maxAllowedUsers : 5;
-  const tenantUsers = global.clientUsersStore.filter(u => u.tenantId === (tenant ? tenant._id : 'default'));
+  const tenantUsers = global.clientUsersStore.filter(u => u.tenantId === (tenant ? tenant._id : 'tenant_acme_default'));
 
   res.json({
     tenantName,
@@ -104,14 +152,14 @@ app.post('/api/client/team', authenticateToken, (req, res) => {
   const { name, email, password, role } = req.body;
   const userEmail = req.user.email;
   const tenant = global.tenantsStore.find(t => t.clientAdminEmail?.toLowerCase() === userEmail?.toLowerCase());
-  const tenantUsers = global.clientUsersStore.filter(u => u.tenantId === (tenant ? tenant._id : 'default'));
+  const tenantUsers = global.clientUsersStore.filter(u => u.tenantId === (tenant ? tenant._id : 'tenant_acme_default'));
   const maxAllowedUsers = tenant ? tenant.maxAllowedUsers : 5;
 
   if (tenantUsers.length + 1 >= maxAllowedUsers) {
     return res.status(400).json({ error: 'Seat limit reached! Upgrade plan above.' });
   }
 
-  const newUser = { _id: 'user_' + Date.now(), tenantId: tenant ? tenant._id : 'default', name, email, password, role: role || 'user', createdAt: new Date() };
+  const newUser = { _id: 'user_' + Date.now(), tenantId: tenant ? tenant._id : 'tenant_acme_default', name, email, password, role: role || 'user', createdAt: new Date() };
   global.clientUsersStore.push(newUser);
   res.status(201).json({ success: true, message: 'Team member added successfully', user: newUser });
 });
@@ -130,7 +178,7 @@ app.post('/api/billing/upgrade-seats', authenticateToken, (req, res) => {
   res.json({ success: true, message: `Capacity expanded by +${seatsToAdd} seat(s)!`, invoice });
 });
 
-// --- SFA Modules Inline API Endpoints ---
+// SFA Endpoints
 app.get('/api/sfa/analytics', authenticateToken, (req, res) => {
   const totalRevenue = global.sfaOrdersStore.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
   const totalLeads = global.sfaLeadsStore.length;
@@ -189,11 +237,11 @@ app.post('/api/superadmin/tenants', authenticateToken, (req, res) => {
   global.auditLogsStore.unshift({ _id: 'log_' + Date.now(), action: 'TENANT_CREATED', clientId: { companyName }, details: `Onboarded ${companyName}`, createdAt: new Date() });
   res.status(201).json({ success: true, tenant: newTenant });
 });
+
 app.get('/api/superadmin/audit-logs', authenticateToken, (req, res) => res.json(global.auditLogsStore));
 
-// Health Endpoint
 app.get('/health', (req, res) => res.json({ status: 'Healthy', database: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected' }));
-app.get('/', (req, res) => res.send('🚀 SFA SaaS Backend Server Live'));
+app.get('/', (req, res) => res.send('🚀 VeloceSFA Enterprise Server Live'));
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Secure SFA Enterprise Server live on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Secure VeloceSFA Enterprise Server live on port ${PORT}`));
