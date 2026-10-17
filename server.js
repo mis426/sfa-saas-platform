@@ -46,7 +46,7 @@ const authRoutes = require('./routes/auth');
 const sfaRoutes = require('./routes/sfa');
 const checkTenantStatus = require('./middleware/checkTenantStatus');
 
-// Mount routes under BOTH /api/auth AND /auth (Fixes 404 mismatch)
+// Mount routes under BOTH /api/auth AND /auth (Fixes 404 route mismatch)
 app.use('/api/auth', authRoutes);
 app.use('/auth', authRoutes);
 
