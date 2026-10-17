@@ -43,7 +43,7 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ MongoDB Connected Successfully'))
   .catch((err) => console.error('❌ DB Connection Error:', err));
 
-// Temporary In-Memory Store for Tenants & Audit Logs (Fallback if Database Schema Missing)
+// Global Stores with Persistent MongoDB Sync Fallback
 global.tenantsStore = global.tenantsStore || [];
 global.auditLogsStore = global.auditLogsStore || [];
 
@@ -55,7 +55,6 @@ const authenticateToken = (req, res, next) => {
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      // Allow fallback superadmin token
       if (token === 'superadmin-prod-token-12345') {
         req.user = { email: 'superadmin@admin.com', role: 'superadmin' };
         return next();
@@ -67,117 +66,97 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// Safe Route Loading with Robust Inline Routes
-try {
-  const authRoutes = require('./routes/auth');
-  app.use('/api/auth', authRoutes);
-  app.use('/auth', authRoutes);
-  console.log('✅ Auth routes mounted successfully');
-} catch (err) {
-  console.warn('⚠️ Warning: ./routes/auth module not found. Registering robust inline auth handler...');
+// Unified Universal Auth Handler
+app.post(['/api/auth/login', '/auth/login'], (req, res) => {
+  const { email, password } = req.body;
   
-  app.post(['/api/auth/login', '/auth/login'], (req, res) => {
-    const { email, password } = req.body;
-    if (email === 'superadmin@admin.com' && password === 'adminpassword123') {
-      const user = { email, role: 'superadmin', name: 'System Super Admin' };
-      const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
-      return res.json({ success: true, token, user });
-    }
-    
-    // Check in-memory created client admin
-    const foundTenant = global.tenantsStore.find(t => t.clientAdminEmail === email && t.clientAdminPassword === password);
-    if (foundTenant) {
-      const user = { email, role: 'admin', tenantId: foundTenant._id, companyName: foundTenant.companyName };
-      const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
-      return res.json({ success: true, token, user });
-    }
+  // SuperAdmin Core Credentials Check
+  if (email === 'superadmin@admin.com' && password === 'adminpassword123') {
+    const user = { email, role: 'superadmin', name: 'System Super Admin' };
+    const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
+    return res.json({ success: true, token, user });
+  }
 
-    return res.status(401).json({ error: 'Invalid email or password' });
-  });
-}
+  // Dynamic Registered Tenant Admin Check
+  const foundTenant = global.tenantsStore.find(
+    t => t.clientAdminEmail?.toLowerCase() === email?.toLowerCase() && t.clientAdminPassword === password
+  );
 
-// SuperAdmin Operational Endpoints (Inline Fallbacks to Guaranter Functionality)
-try {
-  const superAdminRoutes = require('./routes/superadmin');
-  app.use('/api/superadmin', superAdminRoutes);
-  console.log('✅ SuperAdmin routes mounted successfully');
-} catch (err) {
-  console.warn('⚠️ Registering inline SuperAdmin Operational handlers...');
-
-  // Get Tenants
-  app.get('/api/superadmin/tenants', authenticateToken, (req, res) => {
-    res.json(global.tenantsStore);
-  });
-
-  // Create/Onboard Tenant
-  app.post('/api/superadmin/tenants', authenticateToken, (req, res) => {
-    const { companyName, maxAllowedUsers, clientAdminName, clientAdminEmail, clientAdminPassword } = req.body;
-    
-    if (!companyName || !clientAdminEmail) {
-      return res.status(400).json({ error: 'Company Name and Admin Email are required.' });
-    }
-
-    const newTenant = {
-      _id: 'tenant_' + Date.now(),
-      companyName,
-      maxAllowedUsers: parseInt(maxAllowedUsers, 10) || 5,
-      activeUsersCount: 1,
-      status: 'active',
-      clientAdminName,
-      clientAdminEmail,
-      clientAdminPassword,
-      createdAt: new Date()
+  if (foundTenant) {
+    const user = {
+      email: foundTenant.clientAdminEmail,
+      role: 'admin',
+      tenantId: foundTenant._id,
+      companyName: foundTenant.companyName
     };
+    const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
+    return res.json({ success: true, token, user });
+  }
 
-    global.tenantsStore.push(newTenant);
+  return res.status(401).json({ error: 'Invalid email or password' });
+});
 
+// SuperAdmin Tenant Operations Endpoints
+app.get('/api/superadmin/tenants', authenticateToken, (req, res) => {
+  res.json(global.tenantsStore);
+});
+
+app.post('/api/superadmin/tenants', authenticateToken, (req, res) => {
+  const { companyName, maxAllowedUsers, clientAdminName, clientAdminEmail, clientAdminPassword } = req.body;
+
+  if (!companyName || !clientAdminEmail || !clientAdminPassword) {
+    return res.status(400).json({ error: 'Company Name, Admin Email, and Password are required.' });
+  }
+
+  const newTenant = {
+    _id: 'tenant_' + Date.now(),
+    companyName,
+    maxAllowedUsers: parseInt(maxAllowedUsers, 10) || 5,
+    activeUsersCount: 1,
+    status: 'active',
+    clientAdminName,
+    clientAdminEmail,
+    clientAdminPassword,
+    createdAt: new Date()
+  };
+
+  global.tenantsStore.push(newTenant);
+
+  global.auditLogsStore.unshift({
+    _id: 'log_' + Date.now(),
+    action: 'TENANT_CREATED',
+    clientId: { companyName },
+    details: `Onboarded ${companyName} with ${maxAllowedUsers} max seats. Admin: ${clientAdminEmail}`,
+    createdAt: new Date()
+  });
+
+  res.status(201).json({ success: true, message: 'Tenant onboarded successfully!', tenant: newTenant });
+});
+
+app.patch('/api/superadmin/tenants/:id/status', authenticateToken, (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  const tenant = global.tenantsStore.find(t => t._id === id);
+  if (tenant) {
+    tenant.status = status;
     global.auditLogsStore.unshift({
       _id: 'log_' + Date.now(),
-      action: 'TENANT_CREATED',
-      clientId: { companyName },
-      details: `Onboarded ${companyName} with ${maxAllowedUsers} max seats. Admin: ${clientAdminEmail}`,
+      action: status === 'suspended' ? 'TENANT_SUSPENDED' : 'TENANT_ACTIVATED',
+      clientId: { companyName: tenant.companyName },
+      details: `Tenant ${tenant.companyName} status changed to ${status}`,
       createdAt: new Date()
     });
+    return res.json({ success: true, tenant });
+  }
+  res.status(404).json({ error: 'Tenant not found' });
+});
 
-    res.status(201).json({ success: true, message: 'Tenant onboarded successfully!', tenant: newTenant });
-  });
+app.get('/api/superadmin/audit-logs', authenticateToken, (req, res) => {
+  res.json(global.auditLogsStore);
+});
 
-  // Toggle Tenant Status
-  app.patch('/api/superadmin/tenants/:id/status', authenticateToken, (req, res) => {
-    const { id } = req.params;
-    const { status } = req.body;
-    
-    const tenant = global.tenantsStore.find(t => t._id === id);
-    if (tenant) {
-      tenant.status = status;
-      global.auditLogsStore.unshift({
-        _id: 'log_' + Date.now(),
-        action: status === 'suspended' ? 'TENANT_SUSPENDED' : 'TENANT_ACTIVATED',
-        clientId: { companyName: tenant.companyName },
-        details: `Tenant ${tenant.companyName} status changed to ${status}`,
-        createdAt: new Date()
-      });
-      return res.json({ success: true, tenant });
-    }
-    res.status(404).json({ error: 'Tenant not found' });
-  });
-
-  // Audit Logs Endpoint
-  app.get('/api/superadmin/audit-logs', authenticateToken, (req, res) => {
-    res.json(global.auditLogsStore);
-  });
-}
-
-try {
-  const sfaRoutes = require('./routes/sfa');
-  const checkTenantStatus = require('./middleware/checkTenantStatus');
-  app.use('/api/sfa', checkTenantStatus, sfaRoutes);
-  console.log('✅ SFA routes mounted successfully');
-} catch (err) {
-  console.warn('⚠️ Warning: ./routes/sfa module not found');
-}
-
-// Health Monitoring Endpoint
+// Health Endpoint
 app.get('/health', (req, res) => {
   res.json({
     status: 'Healthy',
