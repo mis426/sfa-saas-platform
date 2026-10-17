@@ -43,9 +43,11 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ MongoDB Connected Successfully'))
   .catch((err) => console.error('❌ DB Connection Error:', err));
 
-// Global Stores with Persistent MongoDB Sync Fallback
+// Global Stores
 global.tenantsStore = global.tenantsStore || [];
 global.auditLogsStore = global.auditLogsStore || [];
+global.clientUsersStore = global.clientUsersStore || [];
+global.billingHistoryStore = global.billingHistoryStore || [];
 
 // Middleware for JWT Authentication
 const authenticateToken = (req, res, next) => {
@@ -70,14 +72,12 @@ const authenticateToken = (req, res, next) => {
 app.post(['/api/auth/login', '/auth/login'], (req, res) => {
   const { email, password } = req.body;
   
-  // SuperAdmin Core Credentials Check
   if (email === 'superadmin@admin.com' && password === 'adminpassword123') {
     const user = { email, role: 'superadmin', name: 'System Super Admin' };
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
     return res.json({ success: true, token, user });
   }
 
-  // Dynamic Registered Tenant Admin Check
   const foundTenant = global.tenantsStore.find(
     t => t.clientAdminEmail?.toLowerCase() === email?.toLowerCase() && t.clientAdminPassword === password
   );
@@ -96,7 +96,92 @@ app.post(['/api/auth/login', '/auth/login'], (req, res) => {
   return res.status(401).json({ error: 'Invalid email or password' });
 });
 
-// SuperAdmin Tenant Operations Endpoints
+// --- Client Portal Endpoints ---
+
+// Get Client Team Data
+app.get('/api/client/team', authenticateToken, (req, res) => {
+  const userEmail = req.user.email;
+  const tenant = global.tenantsStore.find(t => t.clientAdminEmail?.toLowerCase() === userEmail?.toLowerCase());
+
+  const tenantName = tenant ? tenant.companyName : 'Acme Corp';
+  const maxAllowedUsers = tenant ? tenant.maxAllowedUsers : 5;
+  const tenantUsers = global.clientUsersStore.filter(u => u.tenantId === (tenant ? tenant._id : 'default'));
+
+  res.json({
+    tenantName,
+    maxAllowedUsers,
+    activeUsersCount: tenantUsers.length + 1, // Admin + Users
+    users: [
+      { _id: 'admin_1', name: tenant ? tenant.clientAdminName : 'Client Admin', email: userEmail, role: 'admin' },
+      ...tenantUsers
+    ]
+  });
+});
+
+// Add Team Member
+app.post('/api/client/team', authenticateToken, (req, res) => {
+  const { name, email, password, role } = req.body;
+  const userEmail = req.user.email;
+  const tenant = global.tenantsStore.find(t => t.clientAdminEmail?.toLowerCase() === userEmail?.toLowerCase());
+
+  const tenantUsers = global.clientUsersStore.filter(u => u.tenantId === (tenant ? tenant._id : 'default'));
+  const maxAllowedUsers = tenant ? tenant.maxAllowedUsers : 5;
+
+  if (tenantUsers.length + 1 >= maxAllowedUsers) {
+    return res.status(400).json({ error: 'Seat limit reached! Upgrade your plan above to invite more members.' });
+  }
+
+  const newUser = {
+    _id: 'user_' + Date.now(),
+    tenantId: tenant ? tenant._id : 'default',
+    name,
+    email,
+    password,
+    role: role || 'user',
+    createdAt: new Date()
+  };
+
+  global.clientUsersStore.push(newUser);
+  res.status(201).json({ success: true, message: 'Team member added successfully', user: newUser });
+});
+
+// --- Billing Endpoints ---
+
+// Get Billing History
+app.get('/api/billing/history', authenticateToken, (req, res) => {
+  res.json(global.billingHistoryStore);
+});
+
+// Upgrade Seats Capacity
+app.post('/api/billing/upgrade-seats', authenticateToken, (req, res) => {
+  const { additionalSeats } = req.body;
+  const userEmail = req.user.email;
+  const tenant = global.tenantsStore.find(t => t.clientAdminEmail?.toLowerCase() === userEmail?.toLowerCase());
+
+  const seatsToAdd = parseInt(additionalSeats, 10) || 1;
+  if (tenant) {
+    tenant.maxAllowedUsers += seatsToAdd;
+  }
+
+  const invoice = {
+    _id: 'inv_' + Date.now(),
+    createdAt: new Date(),
+    transactionId: 'TXN_' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+    additionalSeatsRequested: seatsToAdd,
+    amountPaid: seatsToAdd * 10,
+    paymentStatus: 'paid'
+  };
+
+  global.billingHistoryStore.unshift(invoice);
+
+  res.json({
+    success: true,
+    message: `🎉 Capacity successfully expanded by +${seatsToAdd} seat(s)!`,
+    invoice
+  });
+});
+
+// --- SuperAdmin Endpoints ---
 app.get('/api/superadmin/tenants', authenticateToken, (req, res) => {
   res.json(global.tenantsStore);
 });
