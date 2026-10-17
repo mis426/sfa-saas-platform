@@ -57,7 +57,7 @@ try {
       return res.json({
         success: true,
         token: 'superadmin-prod-token-12345',
-        user: { email, role: 'SuperAdmin', name: 'System Super Admin' }
+        user: { email, role: 'superadmin', name: 'System Super Admin' }
       });
     }
     return res.status(401).json({ error: 'Invalid email or password' });

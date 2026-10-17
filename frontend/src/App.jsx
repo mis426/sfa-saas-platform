@@ -22,6 +22,8 @@ const Navbar = () => {
     navigate('/login');
   };
 
+  const isSuperAdmin = user?.role?.toLowerCase() === 'superadmin';
+
   return (
     <nav style={{
       display: 'flex',
@@ -35,9 +37,9 @@ const Navbar = () => {
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
         <span style={{ fontWeight: 'bold', fontSize: '18px', color: '#38bdf8' }}>SaaS Enterprise</span>
         
-        {user?.role === 'superadmin' ? (
+        {isSuperAdmin ? (
           <Link to="/super-admin" style={{ color: '#fff', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <ShieldCheck size={18} /> Super Admin
+            <ShieldCheck size={18} /> Super Admin Panel
           </Link>
         ) : (
           <>
@@ -81,6 +83,8 @@ function App() {
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
 
+  const isSuperAdmin = user?.role?.toLowerCase() === 'superadmin';
+
   return (
     <Router>
       <Navbar />
@@ -90,7 +94,7 @@ function App() {
           path="/login" 
           element={
             token ? (
-              user?.role === 'superadmin' ? (
+              isSuperAdmin ? (
                 <Navigate to="/super-admin" replace />
               ) : (
                 <Navigate to="/dashboard" replace />
@@ -105,7 +109,7 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute allowedRoles={['admin', 'user', 'superadmin']}>
+            <ProtectedRoute allowedRoles={['admin', 'user', 'superadmin', 'SuperAdmin']}>
               <Dashboard />
             </ProtectedRoute>
           }
@@ -115,7 +119,7 @@ function App() {
         <Route
           path="/sfa"
           element={
-            <ProtectedRoute allowedRoles={['admin', 'user', 'superadmin']}>
+            <ProtectedRoute allowedRoles={['admin', 'user', 'superadmin', 'SuperAdmin']}>
               <SFADashboard />
             </ProtectedRoute>
           }
@@ -125,7 +129,7 @@ function App() {
         <Route
           path="/super-admin"
           element={
-            <ProtectedRoute allowedRoles={['superadmin']}>
+            <ProtectedRoute allowedRoles={['superadmin', 'SuperAdmin']}>
               <SuperAdmin />
             </ProtectedRoute>
           }
@@ -136,7 +140,7 @@ function App() {
           path="*"
           element={
             token ? (
-              user?.role === 'superadmin' ? (
+              isSuperAdmin ? (
                 <Navigate to="/super-admin" replace />
               ) : (
                 <Navigate to="/dashboard" replace />
