@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('clientadmin@acme.com');
+  const [password, setPassword] = useState('acmepassword123');
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -18,6 +18,10 @@ const Login = () => {
     setLoading(true);
 
     try {
+      // Step 1: Health Ping to Wake Render Free Instance
+      await axios.get('https://sfa-saas-platform.onrender.com/health', { timeout: 10000 }).catch(() => {});
+
+      // Step 2: Submit Auth Request
       const res = await axios.post('https://sfa-saas-platform.onrender.com/api/auth/login', {
         email: email.trim(),
         password: password.trim()
@@ -28,7 +32,6 @@ const Login = () => {
         localStorage.setItem('token', token);
         setAuth(user, token);
 
-        // Role-based Direction Routing
         if (user.role === 'superadmin') {
           navigate('/superadmin');
         } else if (user.role === 'admin') {
@@ -39,7 +42,11 @@ const Login = () => {
       }
     } catch (err) {
       console.error('Login error:', err);
-      setErrorMsg(err.response?.data?.error || 'Server cold-start delay or Network Error. Please retry in 10 seconds.');
+      if (err.response && err.response.data && err.response.data.error) {
+        setErrorMsg(err.response.data.error);
+      } else {
+        setErrorMsg('Render backend waking up (cold-start). Please wait 15 seconds & click Sign In again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -93,13 +100,13 @@ const Login = () => {
             disabled={loading}
             style={{ width: '100%', padding: '12px', backgroundColor: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', marginTop: '6px' }}
           >
-            {loading ? 'Authenticating Server...' : 'Sign In'}
+            {loading ? 'Waking Server & Authenticating...' : 'Sign In'}
           </button>
         </form>
 
         <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#f8fafc', borderRadius: '6px', fontSize: '11px', color: '#64748b', textAlign: 'center' }}>
-          <div><strong>Client Admin:</strong> clientadmin@acme.com[cite: 2]</div>
-          <div><strong>Password:</strong> acmepassword123[cite: 2]</div>
+          <div><strong>Client Admin:</strong> clientadmin@acme.com</div>
+          <div><strong>Password:</strong> acmepassword123</div>
         </div>
 
       </div>
