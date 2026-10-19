@@ -1,29 +1,20 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import SFADashboard from './pages/SFADashboard';
-import SuperAdmin from './pages/SuperAdmin';
-import Settings from './pages/Settings';
 import Navbar from './components/Navbar';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
+import Attendance from './pages/Attendance';
+import SfaHub from './pages/SfaHub';
+import SuperAdminHub from './pages/SuperAdminHub';
+import Settings from './pages/Settings';
 
-const AuthGuard = ({ children, allowedRoles }) => {
+// Protected Route Component to enforce Auth token check
+const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token');
-  const userStr = localStorage.getItem('user');
-  const user = userStr ? JSON.parse(userStr) : null;
-
   if (!token) {
     return <Navigate to="/login" replace />;
   }
-
-  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    // If field user tries to access admin views, redirect to SFA
-    if (user.role === 'user' || user.role === 'sales_rep') {
-      return <Navigate to="/sfa" replace />;
-    }
-    return <Navigate to="/dashboard" replace />;
-  }
-
   return children;
 };
 
@@ -32,35 +23,57 @@ function App() {
     <Router>
       <Navbar />
       <Routes>
+        {/* PUBLIC ROUTES */}
         <Route path="/login" element={<Login />} />
-        
-        {/* Unolo Admin Realtime Dashboard */}
-        <Route path="/dashboard" element={
-          <AuthGuard allowedRoles={['admin', 'superadmin']}>
-            <Dashboard />
-          </AuthGuard>
-        } />
+        <Route path="/register" element={<Register />} />
 
-        {/* Field Sales Rep Portal */}
-        <Route path="/sfa" element={
-          <AuthGuard allowedRoles={['user', 'sales_rep', 'admin', 'superadmin']}>
-            <SFADashboard />
-          </AuthGuard>
-        } />
+        {/* PROTECTED CLIENT ADMIN & SFA ROUTES */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/attendance"
+          element={
+            <ProtectedRoute>
+              <Attendance />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/sfa"
+          element={
+            <ProtectedRoute>
+              <SfaHub />
+            </ProtectedRoute>
+          }
+        />
 
-        {/* Settings Suite */}
-        <Route path="/settings" element={
-          <AuthGuard allowedRoles={['admin', 'superadmin']}>
-            <Settings />
-          </AuthGuard>
-        } />
+        {/* PROTECTED SUPERADMIN HUB ROUTE */}
+        <Route
+          path="/superadmin"
+          element={
+            <ProtectedRoute>
+              <SuperAdminHub />
+            </ProtectedRoute>
+          }
+        />
 
-        <Route path="/superadmin" element={
-          <AuthGuard allowedRoles={['superadmin']}>
-            <SuperAdmin />
-          </AuthGuard>
-        } />
+        {/* PROTECTED SETTINGS ROUTE */}
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
 
+        {/* DEFAULT FALLBACK REDIRECT TO DASHBOARD */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>
