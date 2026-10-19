@@ -8,6 +8,7 @@ const Dashboard = () => {
 
   // Attendance Sub-tab state
   const [activeAttendanceTab, setActiveAttendanceTab] = useState('Overview');
+  const [showLegend, setShowLegend] = useState(true);
 
   // Filter & Search States across tabs
   const [filterStatus, setFilterStatus] = useState('All');
@@ -252,7 +253,7 @@ const Dashboard = () => {
             <button style={{ backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '4px 8px', fontSize: '11px', color: '#334155', cursor: 'pointer' }}>Delete Sample Data</button>
             <span style={{ color: '#2563eb', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer' }}>✨ June</span>
             <button style={{ backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '4px 8px', fontSize: '11px', color: '#334155', cursor: 'pointer' }}>💬 Chats</button>
-            <span style={{ color: '#2563eb', fontWeight: '500' }}>clientadmin@acme.com</span>
+            <span style={{ color: '#2563eb', fontWeight: '500' }}>MIS@ACTIONLIFESTYLE.COM</span>
             <button onClick={handleLogout} style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 10px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}>Logout</button>
           </div>
         </div>
@@ -304,10 +305,10 @@ const Dashboard = () => {
                 >
                   {tab === 'Overview' && '📊 '}
                   {tab === 'Shifts' && '⏱️ '}
-                  {tab === 'Attendance Muster' && '📜 '}
+                  {tab === 'Attendance Muster' && '✏️ '}
                   {tab === 'Roster' && '📅 '}
-                  {tab === 'Regularisation Request' && '📝 '}
-                  {tab === 'Attendance Punches' && '📍 '}
+                  {tab === 'Regularisation Request' && '👤 '}
+                  {tab === 'Attendance Punches' && '🎫 '}
                   {tab}
                 </div>
               ))}
@@ -325,7 +326,6 @@ const Dashboard = () => {
               <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>Realtime Dashboard</div>
 
-                {/* ROW 1 */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1.5fr', gap: '16px' }}>
                   <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
                     <div style={{ color: '#475569', fontWeight: 'bold', marginBottom: '12px', fontSize: '11px' }}>Real Time Status 🛈</div>
@@ -364,7 +364,6 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* ROW 2 */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', gap: '16px' }}>
                   <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -412,200 +411,233 @@ const Dashboard = () => {
                 </div>
               </div>
             )}
-
-            {/* LIVE LOCATION TAB */}
-            {activeTab === 'Live Location' && (
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ height: '36px', backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0 }}>
-                  <div style={{ fontWeight: 'bold', color: '#334155', fontSize: '11px' }}>
-                    Employees ({employees.filter(e => filterStatus === 'All' ? true : filterStatus === 'Punched In' ? e.isPunchedIn : !e.isPunchedIn).length})
-                  </div>
-                </div>
-
-                <div style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
-                  <div style={{ width: '260px', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0', overflowY: 'auto', zIndex: 10 }}>
-                    {employees.map(emp => (
-                      <div key={emp.id} style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <strong style={{ fontSize: '11px', color: '#0f172a' }}>{emp.name}</strong>
-                          <span style={{ fontSize: '9px', fontWeight: 'bold', color: '#16a34a' }}>🔋 {emp.battery}</span>
-                        </div>
-                        <div style={{ fontSize: '9.5px', color: emp.isPunchedIn ? '#16a34a' : '#ef4444', margin: '4px 0', fontWeight: 'bold' }}>{emp.status}</div>
-                        <div style={{ color: '#64748b', fontSize: '9px' }}>📍 {emp.location}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div style={{ flex: 1, backgroundColor: '#e2e8f0' }}>
-                    <iframe title="Unolo Map" width="100%" height="100%" frameBorder="0" src="https://maps.google.com/maps?q=20.5937,78.9629&z=5&output=embed" />
-                  </div>
-                </div>
-              </div>
-            )}
           </>
         )}
 
-        {/* 3. FULL ATTENDANCE MODULE VIEW (EMBEDDED PIXEL-EXACT) */}
+        {/* 3. FULL ATTENDANCE MODULE VIEW (UNOLO EXACT) */}
         {activeSidebar === 'Attendance' && (
           <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             
-            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>Overview</div>
+            {/* 1. OVERVIEW SUB TAB */}
+            {activeAttendanceTab === 'Overview' && (
+              <>
+                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>Overview</div>
 
-            {/* ROW 1: REAL TIME STATUS GAUGE & OFF DUTY EMPLOYEES */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              
-              {/* Real Time Status */}
-              <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px' }}>
-                <div style={{ color: '#475569', fontWeight: 'bold', marginBottom: '12px', fontSize: '11px' }}>Real time Status (5) 🛈</div>
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ position: 'relative', width: '160px', height: '80px', overflow: 'hidden' }}>
-                    <div style={{ width: '160px', height: '160px', borderRadius: '50%', border: '18px solid #ef4444', borderTopColor: '#22c55e', transform: 'rotate(-45deg)', boxSizing: 'border-box' }} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px' }}>
+                    <div style={{ color: '#475569', fontWeight: 'bold', marginBottom: '12px', fontSize: '11px' }}>Real time Status (5) 🛈</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <div style={{ position: 'relative', width: '160px', height: '80px', overflow: 'hidden' }}>
+                        <div style={{ width: '160px', height: '160px', borderRadius: '50%', border: '18px solid #ef4444', borderTopColor: '#22c55e', transform: 'rotate(-45deg)', boxSizing: 'border-box' }} />
+                      </div>
+                      <div style={{ marginTop: '-30px', textAlign: 'center' }}>
+                        <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a' }}>5</span>
+                        <div style={{ fontSize: '10px', color: '#64748b' }}>All Employees</div>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginTop: '16px', fontSize: '10px', fontWeight: 'bold' }}>
+                        <span style={{ color: '#22c55e' }}>● 1 Punched In</span>
+                        <span style={{ color: '#ef4444' }}>● 4 Punched Out</span>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ marginTop: '-30px', textAlign: 'center' }}>
-                    <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a' }}>5</span>
-                    <div style={{ fontSize: '10px', color: '#64748b' }}>All Employees</div>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginTop: '16px', fontSize: '10px', fontWeight: 'bold' }}>
-                    <span style={{ color: '#22c55e' }}>● 1 Punched In</span>
-                    <span style={{ color: '#ef4444' }}>● 4 Punched Out</span>
-                  </div>
-                </div>
-              </div>
 
-              {/* Off Duty Employees */}
-              <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <span style={{ fontWeight: 'bold', color: '#475569', fontSize: '11px' }}>Off Duty Employees</span>
-                  <div style={{ display: 'flex', gap: '6px' }}>
-                    <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>All</option></select>
-                    <input type="text" placeholder="🔍 Search Here" style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px', width: '100px' }} />
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '140px', color: '#94a3b8', fontSize: '11px' }}>
-                  No Data found
-                </div>
-              </div>
-
-            </div>
-
-            {/* ROW 2: ATTENDANCE OVERVIEW CHART & AVERAGE WORKING HOURS */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-              
-              {/* Attendance Overview Chart Box */}
-              <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '11px' }}>Attendance Overview</span>
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>Present</option></select>
-                    <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>This Week</option></select>
-                    <button style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '50%', width: '18px', height: '18px', fontSize: '9px', cursor: 'pointer' }}>%</button>
+                  <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ fontWeight: 'bold', color: '#475569', fontSize: '11px' }}>Off Duty Employees</span>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>All</option></select>
+                        <input type="text" placeholder="🔍 Search Here" style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px', width: '100px' }} />
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '140px', color: '#94a3b8', fontSize: '11px' }}>
+                      No Data found
+                    </div>
                   </div>
                 </div>
 
-                <div style={{ height: '120px', borderLeft: '1px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 10px' }}>
-                  {['19-10', '20-10', '21-10', '22-10', '23-10', '24-10', '25-10'].map(dt => (
-                    <span key={dt} style={{ fontSize: '9px', color: '#64748b', marginBottom: '-16px' }}>{dt}</span>
-                  ))}
-                  <div style={{ position: 'absolute', top: '10px', left: '-25px', fontSize: '8px', color: '#94a3b8' }}>100%</div>
-                  <div style={{ position: 'absolute', top: '50px', left: '-20px', fontSize: '8px', color: '#94a3b8' }}>50%</div>
-                  <div style={{ position: 'absolute', top: '90px', left: '-15px', fontSize: '8px', color: '#94a3b8' }}>0%</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '11px' }}>Attendance Overview</span>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>Present</option></select>
+                        <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>This Week</option></select>
+                        <button style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '50%', width: '18px', height: '18px', fontSize: '9px' }}>%</button>
+                      </div>
+                    </div>
+                    <div style={{ height: '120px', borderLeft: '1px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 10px' }}>
+                      {['19-10', '20-10', '21-10', '22-10', '23-10', '24-10', '25-10'].map(dt => (
+                        <span key={dt} style={{ fontSize: '9px', color: '#64748b' }}>{dt}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '11px' }}>Average Working Hours</span>
+                      <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>This Week</option></select>
+                    </div>
+                    <div style={{ height: '120px', borderLeft: '1px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 10px' }}>
+                      {['19-10', '20-10', '21-10', '22-10', '23-10', '24-10', '25-10'].map(dt => (
+                        <span key={dt} style={{ fontSize: '9px', color: '#64748b' }}>{dt}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '12px' }}>Employee List (5)</span>
+                    <input type="text" placeholder="🔍 Search Employee" value={attendanceSearch} onChange={(e) => setAttendanceSearch(e.target.value)} style={{ padding: '3px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px', width: '160px' }} />
+                  </div>
+
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '10px' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
+                        <th style={{ padding: '8px' }}>Employee</th>
+                        <th style={{ padding: '8px' }}>Punched In</th>
+                        <th style={{ padding: '8px' }}>Punched Out</th>
+                        <th style={{ padding: '8px' }}>Location</th>
+                        <th style={{ padding: '8px' }}>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {employees.filter(e => e.name.toLowerCase().includes(attendanceSearch.toLowerCase())).map((emp) => (
+                        <tr key={emp.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '10px 8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ width: '26px', height: '26px', backgroundColor: '#bae6fd', color: '#0284c7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '9px' }}>SU</div>
+                            <div>
+                              <div style={{ fontWeight: 'bold', color: '#0f172a' }}>{emp.name}</div>
+                              <div style={{ color: '#94a3b8', fontSize: '9px' }}>{emp.code}</div>
+                            </div>
+                          </td>
+                          <td style={{ padding: '10px 8px' }}>{emp.punchedInTime}</td>
+                          <td style={{ padding: '10px 8px' }}>{emp.punchedOutTime}</td>
+                          <td style={{ padding: '10px 8px' }}>{emp.location}</td>
+                          <td style={{ padding: '10px 8px' }}>
+                            <span style={{ backgroundColor: emp.isPunchedIn ? '#f0fdf4' : '#fef2f2', color: emp.isPunchedIn ? '#16a34a' : '#ef4444', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold', fontSize: '9px' }}>
+                              {emp.isPunchedIn ? 'Punched In' : 'Punched Out'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {/* 2. SHIFTS SUB TAB */}
+            {activeAttendanceTab === 'Shifts' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1e293b' }}>Create Shifts</div>
+                    <div style={{ fontSize: '10px', color: '#2563eb', marginTop: '2px' }}>Note: When a roster and a shift exist for the same day for the same employee, the roster takes priority.</div>
+                  </div>
+                  <button style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: '4px', fontWeight: 'bold' }}>+ Add Shift</button>
+                </div>
+
+                <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '16px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', fontSize: '10px' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                        <th style={{ padding: '8px', textAlign: 'left' }}>Employee</th>
+                        <th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th><th>Saturday</th><th>Sunday</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {employees.map(emp => (
+                        <tr key={emp.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '8px', textAlign: 'left', fontWeight: 'bold' }}>{emp.name} {emp.code}</td>
+                          {[1,2,3,4,5,6].map(i => (
+                            <td key={i} style={{ padding: '8px' }}>
+                              <span style={{ backgroundColor: '#f0fdf4', color: '#16a34a', padding: '3px 8px', borderRadius: '4px', fontWeight: 'bold' }}>default ✕</span>
+                            </td>
+                          ))}
+                          <td style={{ padding: '8px', color: '#94a3b8' }}>Weekly Off</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
+            )}
 
-              {/* Average Working Hours Chart Box */}
-              <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '11px' }}>Average Working Hours</span>
-                  <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>This Week</option></select>
-                </div>
-
-                <div style={{ height: '120px', borderLeft: '1px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 10px' }}>
-                  {['19-10', '20-10', '21-10', '22-10', '23-10', '24-10', '25-10'].map(dt => (
-                    <span key={dt} style={{ fontSize: '9px', color: '#64748b', marginBottom: '-16px' }}>{dt}</span>
-                  ))}
-                  <div style={{ position: 'absolute', top: '10px', left: '-15px', fontSize: '8px', color: '#94a3b8' }}>4</div>
-                  <div style={{ position: 'absolute', top: '40px', left: '-15px', fontSize: '8px', color: '#94a3b8' }}>3</div>
-                  <div style={{ position: 'absolute', top: '70px', left: '-15px', fontSize: '8px', color: '#94a3b8' }}>2</div>
-                  <div style={{ position: 'absolute', top: '100px', left: '-15px', fontSize: '8px', color: '#94a3b8' }}>0</div>
-                </div>
-              </div>
-
-            </div>
-
-            {/* ROW 3: EMPLOYEE LIST (5) GRID TABLE */}
-            <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '12px' }}>Employee List (5)</span>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <input
-                    type="text"
-                    placeholder="🔍 Search Employee"
-                    value={attendanceSearch}
-                    onChange={(e) => setAttendanceSearch(e.target.value)}
-                    style={{ padding: '3px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px', width: '160px' }}
-                  />
-                  <select style={{ padding: '3px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>All</option></select>
+            {/* 3. ATTENDANCE MUSTER SUB TAB */}
+            {activeAttendanceTab === 'Attendance Muster' && (
+              <div style={{ display: 'flex', gap: '16px' }}>
+                <div style={{ flex: 1, backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '16px' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1e293b', marginBottom: '12px' }}>Attendance Muster</div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px', textAlign: 'center' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                        <th style={{ padding: '6px', textAlign: 'left' }}>Employee Name</th>
+                        {['12 Oct','13 Oct','14 Oct','15 Oct','16 Oct','17 Oct','18 Oct','19 Oct'].map(d => <th key={d}>{d}</th>)}
+                        <th style={{ color: '#16a34a' }}>Present</th><th style={{ color: '#ef4444' }}>Absent</th><th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {employees.map((emp, i) => (
+                        <tr key={emp.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '8px', textAlign: 'left', fontWeight: 'bold' }}>{emp.name} {emp.code}</td>
+                          <td style={{ color: '#16a34a', fontWeight: 'bold' }}>P : -</td>
+                          <td style={{ color: '#16a34a', fontWeight: 'bold' }}>P : -</td>
+                          <td style={{ color: '#16a34a', fontWeight: 'bold' }}>P : -</td>
+                          <td style={{ color: '#16a34a', fontWeight: 'bold' }}>P : -</td>
+                          <td style={{ color: '#16a34a', fontWeight: 'bold' }}>P : -</td>
+                          <td>-</td><td>-</td><td>-</td>
+                          <td style={{ color: '#16a34a', fontWeight: 'bold' }}>5</td>
+                          <td style={{ color: '#ef4444', fontWeight: 'bold' }}>0</td>
+                          <td style={{ fontWeight: 'bold' }}>5</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
+            )}
 
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '10px' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
-                    <th style={{ padding: '8px' }}>Employee</th>
-                    <th style={{ padding: '8px' }}>Punched In</th>
-                    <th style={{ padding: '8px' }}>Punched Out</th>
-                    <th style={{ padding: '8px' }}>Location</th>
-                    <th style={{ padding: '8px' }}>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {employees.filter(e => e.name.toLowerCase().includes(attendanceSearch.toLowerCase())).map((emp) => (
-                    <tr key={emp.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '10px 8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ width: '26px', height: '26px', backgroundColor: '#bae6fd', color: '#0284c7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '9px' }}>SU</div>
-                        <div>
-                          <div style={{ fontWeight: 'bold', color: '#0f172a' }}>{emp.name}</div>
-                          <div style={{ color: '#94a3b8', fontSize: '9px' }}>{emp.code}</div>
-                        </div>
-                      </td>
-
-                      <td style={{ padding: '10px 8px' }}>
-                        <div style={{ color: '#0f172a', fontWeight: '500' }}>{emp.punchedInTime}</div>
-                        <div style={{ color: '#94a3b8', fontSize: '9px' }}>From: {emp.inFrom}</div>
-                      </td>
-
-                      <td style={{ padding: '10px 8px' }}>
-                        <div style={{ color: '#0f172a', fontWeight: '500' }}>{emp.punchedOutTime}</div>
-                        {emp.mode && (
-                          <div style={{ marginTop: '2px' }}>
-                            <span style={{ backgroundColor: '#fef3c7', border: '1px solid #fde68a', color: '#b45309', padding: '1px 5px', borderRadius: '3px', fontSize: '8px', fontWeight: 'bold' }}>{emp.mode}</span>
-                          </div>
-                        )}
-                      </td>
-
-                      <td style={{ padding: '10px 8px' }}>
-                        <div style={{ color: '#334155' }}>{emp.location}</div>
-                        <div style={{ color: '#94a3b8', fontSize: '8px' }}>{emp.time}</div>
-                      </td>
-
-                      <td style={{ padding: '10px 8px' }}>
-                        <span style={{
-                          backgroundColor: emp.isPunchedIn ? '#f0fdf4' : '#fef2f2',
-                          color: emp.isPunchedIn ? '#16a34a' : '#ef4444',
-                          border: `1px solid ${emp.isPunchedIn ? '#bbf7d0' : '#fecaca'}`,
-                          padding: '2px 8px',
-                          borderRadius: '10px',
-                          fontWeight: 'bold',
-                          fontSize: '9px'
-                        }}>
-                          {emp.isPunchedIn ? 'Punched In' : 'Punched Out'}
-                        </span>
-                      </td>
+            {/* 4. ROSTER SUB TAB */}
+            {activeAttendanceTab === 'Roster' && (
+              <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '16px' }}>
+                <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1e293b', marginBottom: '12px' }}>Rosters</div>
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', fontSize: '9px' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                      <th style={{ padding: '6px', textAlign: 'left' }}>Employee</th>
+                      {['Thu (01-10)','Fri (02-10)','Sat (03-10)','Sun (04-10)','Mon (05-10)','Tue (06-10)','Wed (07-10)'].map(d => <th key={d}>{d}</th>)}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {employees.map(emp => (
+                      <tr key={emp.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '8px', textAlign: 'left', fontWeight: 'bold' }}>{emp.name} {emp.code}</td>
+                        {[1,2,3,4,5,6,7].map(i => (
+                          <td key={i} style={{ padding: '8px' }}><div style={{ border: '1px dashed #cbd5e1', height: '22px' }} /></td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* 5. REGULARISATION REQUEST SUB TAB */}
+            {activeAttendanceTab === 'Regularisation Request' && (
+              <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '16px' }}>
+                <span style={{ fontWeight: 'bold', fontSize: '12px' }}>Regularisation Request (0)</span>
+                <div style={{ textAlign: 'center', padding: '80px 0', color: '#94a3b8' }}>No rows</div>
+              </div>
+            )}
+
+            {/* 6. ATTENDANCE PUNCHES SUB TAB */}
+            {activeAttendanceTab === 'Attendance Punches' && (
+              <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '16px' }}>
+                <span style={{ fontWeight: 'bold', fontSize: '12px' }}>Attendance Punches (0)</span>
+                <div style={{ textAlign: 'center', padding: '80px 0', color: '#94a3b8' }}>No rows</div>
+              </div>
+            )}
 
           </div>
         )}
