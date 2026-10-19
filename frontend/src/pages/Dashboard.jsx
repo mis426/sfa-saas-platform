@@ -1,421 +1,317 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store/useAuthStore';
-import { 
-  Users, 
-  UserPlus, 
-  ShieldAlert, 
-  Award, 
-  RefreshCw, 
-  CheckCircle2, 
-  CreditCard, 
-  History 
-} from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { token, user } = useAuthStore();
+  const [activeTab, setActiveTab] = useState('Overview');
+  const [activeSidebar, setActiveSidebar] = useState('Dashboard');
 
-  // Role Restriction Guard: Standard field reps (USER) are redirected to SFA Hub
-  useEffect(() => {
-    if (user && user.role?.toLowerCase() === 'user') {
-      navigate('/sfa', { replace: true });
-    }
-  }, [user, navigate]);
+  const employees = [
+    { id: 1, name: 'Sample User 2', code: '(8290)', status: 'Punched Out : Last Friday at 8:24 PM', mode: 'Manual', location: 'Rai Vihar Ph-2 Colony, Semra, Gorakhpur', time: '3 days ago' },
+    { id: 2, name: 'Sample User 1', code: '(20)', status: 'Punched Out : Last Friday at 8:11 PM', mode: 'Manual', location: 'Pitampura, New Delhi', time: '3 days ago' },
+    { id: 3, name: 'Sample User 3', code: '(PPL15M/038)', status: 'Punched Out : Last Friday at 8:43 PM', mode: 'Manual', location: 'Q4CJ+5C2, Humnabad, Karnataka 585330, India', time: '3 days ago' },
+    { id: 4, name: 'Sample User 5', code: '', status: 'Punched In : Last Friday at 11:46 AM', mode: 'Manual', location: 'Tansen Road, Hazira, Birla Nagar, Gwalior', time: '3 days ago' },
+    { id: 5, name: 'Sample User 4', code: '(11535)', status: 'Punched Out : Last Friday at 6:16 PM', mode: 'Manual', location: '6X3J+F42, Kappagal, Karnataka 583103, India', time: '3 days ago' },
+  ];
 
-  const [teamData, setTeamData] = useState({ 
-    tenantName: '', 
-    maxAllowedUsers: 0, 
-    activeUsersCount: 0, 
-    users: [] 
-  });
-  const [billingHistory, setBillingHistory] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  
-  // Team Member Form State
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [role, setRole] = useState('user');
-  const [formMsg, setFormMsg] = useState({ type: '', text: '' });
-  const [submitting, setSubmitting] = useState(false);
-
-  // Upgrade Seats Form State
-  const [additionalSeats, setAdditionalSeats] = useState(1);
-  const [upgradeMsg, setUpgradeMsg] = useState({ type: '', text: '' });
-  const [upgrading, setUpgrading] = useState(false);
-
-  // Fetch Team & Seat Data
-  const fetchTeam = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const res = await axios.get('https://sfa-saas-platform.onrender.com/api/client/team', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setTeamData(res.data);
-    } catch (err) {
-      console.error('Fetch Team Error:', err);
-      setError(err.response?.data?.error || 'Failed to load client team details.');
-    } finally {
-      setLoading(false);
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
   };
-
-  // Fetch Billing History
-  const fetchBillingHistory = async () => {
-    try {
-      const res = await axios.get('https://sfa-saas-platform.onrender.com/api/billing/history', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setBillingHistory(res.data);
-    } catch (err) {
-      console.error('Fetch Billing History Error:', err);
-    }
-  };
-
-  useEffect(() => {
-    if (token) {
-      fetchTeam();
-      fetchBillingHistory();
-    }
-  }, [token]);
-
-  // Handle Add Team Member
-  const handleAddMember = async (e) => {
-    e.preventDefault();
-    setFormMsg({ type: '', text: '' });
-    setSubmitting(true);
-
-    try {
-      await axios.post(
-        'https://sfa-saas-platform.onrender.com/api/client/team',
-        { name, email, password, role },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setFormMsg({ type: 'success', text: `🎉 Successfully invited ${name} (${email}) to the team!` });
-      setName('');
-      setEmail('');
-      setPassword('');
-      setRole('user');
-      fetchTeam();
-    } catch (err) {
-      console.error('Add Member Error:', err);
-      setFormMsg({ 
-        type: 'error', 
-        text: err.response?.data?.error || 'Failed to add team member. Check seat limits.' 
-      });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Handle Upgrade Seat Allocation
-  const handleSeatUpgrade = async (e) => {
-    e.preventDefault();
-    setUpgradeMsg({ type: '', text: '' });
-    setUpgrading(true);
-
-    try {
-      const res = await axios.post(
-        'https://sfa-saas-platform.onrender.com/api/billing/upgrade-seats',
-        { additionalSeats: parseInt(additionalSeats, 10), planType: 'Pro' },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setUpgradeMsg({ type: 'success', text: res.data.message });
-      setAdditionalSeats(1);
-      fetchTeam();
-      fetchBillingHistory();
-    } catch (err) {
-      console.error('Upgrade Seats Error:', err);
-      setUpgradeMsg({ 
-        type: 'error', 
-        text: err.response?.data?.error || 'Failed to process seat upgrade.' 
-      });
-    } finally {
-      setUpgrading(false);
-    }
-  };
-
-  const usagePercent = teamData.maxAllowedUsers > 0 
-    ? Math.min(Math.round((teamData.activeUsersCount / teamData.maxAllowedUsers) * 100), 100) 
-    : 0;
-
-  const isLimitReached = teamData.activeUsersCount >= teamData.maxAllowedUsers;
 
   return (
-    <div style={{ fontFamily: 'sans-serif', backgroundColor: '#f8fafc', minHeight: '100vh', paddingBottom: '40px' }}>
-      <div style={{ maxWidth: '1100px', margin: '32px auto', padding: '0 20px' }}>
-        
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <div>
-            <h1 style={{ fontSize: '26px', color: '#0f172a', margin: '0 0 4px 0' }}>
-              {teamData.tenantName ? `${teamData.tenantName} Portal` : 'Client Dashboard'}
-            </h1>
-            <p style={{ color: '#64748b', margin: 0 }}>Manage team access, roles, seat capacity, and billing invoices.</p>
-          </div>
-          <button 
-            onClick={() => { fetchTeam(); fetchBillingHistory(); }} 
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', backgroundColor: '#fff', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', color: '#334155' }}
-          >
-            <RefreshCw size={16} /> Refresh Data
-          </button>
+    <div style={{ display: 'flex', height: '100vh', width: '100vw', backgroundColor: '#f1f5f9', fontFamily: 'Inter, -apple-system, sans-serif', fontSize: '12px', overflow: 'hidden' }}>
+      
+      {/* 1. LEFT SIDEBAR */}
+      <div style={{ width: '180px', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        <div style={{ padding: '16px', fontWeight: 'bold', fontSize: '13px', color: '#1e293b', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div style={{ width: '20px', height: '20px', backgroundColor: '#2563eb', color: '#fff', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px' }}>U</div>
+          Unolo SFA
         </div>
 
-        {error && (
-          <div style={{ backgroundColor: '#fef2f2', color: '#dc2626', padding: '16px', borderRadius: '8px', border: '1px solid #fecaca', marginBottom: '24px' }}>
-            {error}
-          </div>
-        )}
-
-        {/* Metrics & Seat Upgrade Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '32px' }}>
-          
-          {/* Seat Quota Card */}
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#64748b', fontSize: '14px', marginBottom: '8px' }}>
-              <span>Subscription Seat Usage</span>
-              <Users size={20} color="#2563eb" />
-            </div>
-            <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a' }}>
-              {teamData.activeUsersCount} <span style={{ fontSize: '16px', color: '#64748b', fontWeight: 'normal' }}>/ {teamData.maxAllowedUsers} Seats</span>
-            </div>
-            <div style={{ backgroundColor: '#e2e8f0', borderRadius: '999px', height: '8px', overflow: 'hidden', marginTop: '16px' }}>
-              <div 
-                style={{ 
-                  width: `${usagePercent}%`, 
-                  backgroundColor: usagePercent >= 100 ? '#ef4444' : usagePercent >= 80 ? '#f59e0b' : '#22c55e', 
-                  height: '100%',
-                  transition: 'width 0.3s ease'
-                }}
-              ></div>
-            </div>
-            <div style={{ fontSize: '12px', color: isLimitReached ? '#dc2626' : '#64748b', marginTop: '8px', fontWeight: isLimitReached ? 'bold' : 'normal' }}>
-              {isLimitReached ? '⚠️ Seat limit reached. Upgrade plan below.' : `${teamData.maxAllowedUsers - teamData.activeUsersCount} seat(s) remaining`}
-            </div>
-          </div>
-
-          {/* Seat Upgrade Form Card */}
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#64748b', fontSize: '14px', marginBottom: '12px' }}>
-              <span style={{ fontWeight: 'bold', color: '#1e293b' }}>Upgrade Seat Capacity</span>
-              <CreditCard size={20} color="#2563eb" />
-            </div>
-
-            {upgradeMsg.text && (
-              <div style={{ padding: '8px 12px', borderRadius: '6px', marginBottom: '12px', backgroundColor: upgradeMsg.type === 'success' ? '#f0fdf4' : '#fef2f2', color: upgradeMsg.type === 'success' ? '#16a34a' : '#dc2626', fontSize: '12px' }}>
-                {upgradeMsg.text}
-              </div>
-            )}
-
-            <form onSubmit={handleSeatUpgrade} style={{ display: 'flex', gap: '10px' }}>
-              <input 
-                type="number" 
-                min="1" 
-                value={additionalSeats} 
-                onChange={(e) => setAdditionalSeats(e.target.value)} 
-                required 
-                style={{ width: '80px', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
-              />
-              <button 
-                type="submit" 
-                disabled={upgrading}
-                style={{ flex: 1, backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: upgrading ? 'not-allowed' : 'pointer' }}
-              >
-                {upgrading ? 'Processing...' : `Add Seats ($${additionalSeats * 10})`}
-              </button>
-            </form>
-            <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '8px', margin: '8px 0 0 0' }}>Instant activation at $10 per additional user seat.</p>
-          </div>
-
-          {/* User Account Card */}
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#64748b', fontSize: '14px', marginBottom: '8px' }}>
-              <span>Active Session</span>
-              <Award size={20} color="#16a34a" />
-            </div>
-            <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a', wordBreak: 'break-all' }}>
-              {user?.email}
-            </div>
-            <div style={{ marginTop: '16px' }}>
-              <span style={{ backgroundColor: '#e0f2fe', color: '#0369a1', padding: '4px 10px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                Role: {user?.role}
-              </span>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Invite Member Section */}
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', marginBottom: '32px' }}>
-          <h3 style={{ marginTop: 0, color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <UserPlus size={20} /> Invite Team Member
-          </h3>
-
-          {formMsg.text && (
-            <div style={{ padding: '12px', borderRadius: '6px', marginBottom: '16px', backgroundColor: formMsg.type === 'success' ? '#f0fdf4' : '#fef2f2', color: formMsg.type === 'success' ? '#16a34a' : '#dc2626', border: `1px solid ${formMsg.type === 'success' ? '#bbf7d0' : '#fecaca'}`, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {formMsg.type === 'success' ? <CheckCircle2 size={18} /> : <ShieldAlert size={18} />}
-              {formMsg.text}
-            </div>
-          )}
-
-          <form onSubmit={handleAddMember} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Full Name</label>
-              <input
-                type="text"
-                placeholder="John Smith"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Work Email</label>
-              <input
-                type="email"
-                placeholder="john@company.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Initial Password</label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
-              />
-            </div>
-
-            <div>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Assign Role</label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box', backgroundColor: '#fff' }}
-              >
-                <option value="user">User (Standard Access)</option>
-                <option value="admin">Admin (Team Management)</option>
-              </select>
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting || isLimitReached}
+        <div style={{ flex: 1, padding: '8px 0', overflowY: 'auto' }}>
+          {[
+            { name: 'Dashboard', icon: '📊' },
+            { name: 'Attendance', icon: '📋' },
+            { name: 'Leaves', icon: '📅' },
+            { name: 'Organization', icon: '👥' },
+            { name: 'Tasks', icon: '☑️' },
+            { name: 'Targets', icon: '🎯' },
+            { name: 'Form', icon: '📝' },
+            { name: 'Order', icon: '🛒' },
+            { name: 'Expenses', icon: '💳' },
+            { name: 'Clients & Sites', icon: '🏢' },
+            { name: 'Reports', icon: '📈' },
+          ].map((item) => (
+            <div
+              key={item.name}
+              onClick={() => setActiveSidebar(item.name)}
               style={{
-                gridColumn: 'span 2',
-                padding: '12px',
-                backgroundColor: isLimitReached ? '#94a3b8' : '#2563eb',
-                color: '#ffffff',
-                border: 'none',
-                borderRadius: '6px',
-                fontWeight: 'bold',
-                cursor: (submitting || isLimitReached) ? 'not-allowed' : 'pointer',
-                marginTop: '8px'
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '8px 16px',
+                color: activeSidebar === item.name ? '#2563eb' : '#64748b',
+                backgroundColor: activeSidebar === item.name ? '#eff6ff' : 'transparent',
+                borderLeft: activeSidebar === item.name ? '3px solid #2563eb' : '3px solid transparent',
+                cursor: 'pointer',
+                fontWeight: activeSidebar === item.name ? '600' : '400'
               }}
             >
-              {submitting ? 'Creating User...' : isLimitReached ? 'Seat Limit Reached (Upgrade Seats Above)' : 'Add Team Member'}
-            </button>
-          </form>
+              <span>{item.icon}</span>
+              <span>{item.name}</span>
+            </div>
+          ))}
+
+          <div style={{ margin: '12px 0', borderTop: '1px solid #f1f5f9' }} />
+
+          {[
+            { name: 'June', icon: '✨' },
+            { name: 'Support', icon: '🎧' },
+            { name: 'Settings', icon: '⚙️', action: () => navigate('/settings') },
+          ].map((item) => (
+            <div
+              key={item.name}
+              onClick={item.action || (() => setActiveSidebar(item.name))}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '8px 16px',
+                color: '#64748b',
+                cursor: 'pointer'
+              }}
+            >
+              <span>{item.icon}</span>
+              <span>{item.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* RIGHT MAIN CONTENT AREA */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+        
+        {/* TOP HEADER BAR */}
+        <div style={{ height: '48px', backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{ fontWeight: 'bold', fontSize: '11px', color: '#0f172a', letterSpacing: '0.5px' }}>MICRO FOOTWEAR</span>
+            <span style={{ backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', color: '#475569', fontSize: '10px', padding: '1px 6px', borderRadius: '4px' }}>Standard</span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button style={{ backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '4px 8px', fontSize: '11px', color: '#334155', cursor: 'pointer' }}>Delete Sample Data</button>
+            <span style={{ color: '#2563eb', fontWeight: 'bold', fontSize: '11px', cursor: 'pointer' }}>✨ June</span>
+            <button style={{ backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '4px 8px', fontSize: '11px', color: '#334155', cursor: 'pointer' }}>💬 Chats</button>
+            <span style={{ position: 'relative', cursor: 'pointer' }}>
+              🔔<span style={{ position: 'absolute', top: '-4px', right: '-6px', backgroundColor: '#ef4444', color: '#fff', borderRadius: '50%', fontSize: '9px', padding: '1px 4px' }}>0</span>
+            </span>
+            <span style={{ color: '#2563eb', fontWeight: '500', cursor: 'pointer' }}>mis@actionlifestyle.com</span>
+            <button onClick={handleLogout} style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', borderRadius: '4px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>Logout</button>
+          </div>
         </div>
 
-        {/* Registered Members Table */}
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', marginBottom: '32px' }}>
-          <h3 style={{ marginTop: 0, color: '#1e293b', marginBottom: '16px' }}>📋 Registered Organization Members</h3>
+        {/* DASHBOARD TAB SUB-BAR */}
+        <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '0 16px', display: 'flex', gap: '20px', flexShrink: 0 }}>
+          {['Overview', 'Live Location', 'Timeline', 'Card View', 'Compliance Status', 'Site Attendance'].map((tab) => (
+            <div
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                padding: '10px 0',
+                color: activeTab === tab ? '#2563eb' : '#64748b',
+                fontWeight: activeTab === tab ? 'bold' : 'normal',
+                borderBottom: activeTab === tab ? '2px solid #2563eb' : '2px solid transparent',
+                cursor: 'pointer',
+                fontSize: '11px'
+              }}
+            >
+              {tab === 'Overview' && '📊 '}
+              {tab === 'Live Location' && '📍 '}
+              {tab === 'Timeline' && '⏳ '}
+              {tab === 'Card View' && '📇 '}
+              {tab === 'Compliance Status' && '🛡️ '}
+              {tab === 'Site Attendance' && '🏢 '}
+              {tab}
+            </div>
+          ))}
+        </div>
 
-          {loading ? (
-            <p style={{ textAlign: 'center', color: '#64748b', padding: '20px 0' }}>Loading team members...</p>
-          ) : teamData.users.length === 0 ? (
-            <p style={{ textAlign: 'center', color: '#64748b', padding: '20px 0' }}>No members registered yet.</p>
-          ) : (
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                  <th style={{ padding: '12px' }}>Name</th>
-                  <th style={{ padding: '12px' }}>Email</th>
-                  <th style={{ padding: '12px' }}>Role</th>
-                </tr>
-              </thead>
-              <tbody>
-                {teamData.users.map((member) => (
-                  <tr key={member._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '12px', fontWeight: '600' }}>{member.name || 'N/A'}</td>
-                    <td style={{ padding: '12px', color: '#334155' }}>{member.email}</td>
-                    <td style={{ padding: '12px' }}>
-                      <span style={{ 
-                        backgroundColor: member.role === 'admin' ? '#dbeafe' : '#f1f5f9', 
-                        color: member.role === 'admin' ? '#1e40af' : '#475569', 
-                        padding: '4px 8px', 
-                        borderRadius: '4px', 
-                        fontSize: '12px', 
-                        fontWeight: 'bold',
-                        textTransform: 'uppercase'
-                      }}>
-                        {member.role}
-                      </span>
-                    </td>
+        {/* MAIN DASHBOARD CONTENT (SCROLLABLE GRID) */}
+        <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          
+          <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>Realtime Dashboard</div>
+
+          {/* ROW 1: Real Time Status Gauge, Punched In/Strength, Teamwise Attendance */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1.5fr', gap: '16px' }}>
+            
+            {/* Real Time Status Gauge */}
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#475569', fontWeight: 'bold', marginBottom: '12px', fontSize: '11px' }}>
+                <span>Real Time Status 🛈</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ position: 'relative', width: '140px', height: '70px', overflow: 'hidden' }}>
+                  <div style={{ width: '140px', height: '140px', borderRadius: '50%', border: '16px solid #ef4444', borderTopColor: '#22c55e', transform: 'rotate(-45deg)', boxSizing: 'border-box' }} />
+                </div>
+                <div style={{ marginTop: '-25px', textAlign: 'center' }}>
+                  <span style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }}>5</span>
+                  <div style={{ fontSize: '10px', color: '#64748b' }}>All Employees</div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginTop: '12px', fontSize: '10px', fontWeight: 'bold' }}>
+                  <span style={{ color: '#22c55e' }}>● 1 Punched In</span>
+                  <span style={{ color: '#ef4444' }}>● 4 Punched Out</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Punched In (Inactive) & Staffing Strength */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px', flex: 1 }}>
+                <div style={{ color: '#475569', fontWeight: 'bold', fontSize: '11px' }}>Punched In (Inactive) Employees 🛈</div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', textAlign: 'center', marginTop: '8px' }}>1</div>
+              </div>
+              <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px', flex: 1 }}>
+                <div style={{ color: '#475569', fontWeight: 'bold', fontSize: '11px' }}>Staffing Strength 🛈</div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', textAlign: 'center', marginTop: '8px' }}>1 / 5</div>
+              </div>
+            </div>
+
+            {/* Teamwise Attendance */}
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
+              <div style={{ color: '#475569', fontWeight: 'bold', fontSize: '11px', marginBottom: '12px' }}>Teamwise Attendance</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px', color: '#64748b' }}>
+                <span>Default</span>
+                <span style={{ fontWeight: 'bold', color: '#0f172a' }}>● 1  ● 4</span>
+              </div>
+            </div>
+
+          </div>
+
+          {/* ROW 2: Employees (5) Table & Off Duty Employees (0) */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', gap: '16px' }}>
+            
+            {/* Active Employees List Table */}
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontWeight: 'bold', color: '#1e293b' }}>Employees (5)</span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>All</option></select>
+                  <input type="text" placeholder="🔍 Search Here" style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }} />
+                </div>
+              </div>
+
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '10px' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
+                    <th style={{ padding: '6px 4px' }}>Employee</th>
+                    <th style={{ padding: '6px 4px' }}>Attendance</th>
+                    <th style={{ padding: '6px 4px' }}>Last Location</th>
                   </tr>
+                </thead>
+                <tbody>
+                  {employees.map((emp) => (
+                    <tr key={emp.id} style={{ borderBottom: '1px solid #f8fafc' }}>
+                      <td style={{ padding: '8px 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '24px', height: '24px', backgroundColor: '#bae6fd', color: '#0284c7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '9px' }}>SU</div>
+                        <div>
+                          <div style={{ fontWeight: 'bold', color: '#0f172a' }}>{emp.name}</div>
+                          <div style={{ color: '#94a3b8', fontSize: '9px' }}>{emp.code}</div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '8px 4px' }}>
+                        <div style={{ color: emp.status.includes('Punched In') ? '#16a34a' : '#0f172a', fontWeight: '500' }}>{emp.status}</div>
+                        <span style={{ backgroundColor: '#f1f5f9', border: '1px solid #e2e8f0', padding: '0 4px', borderRadius: '2px', fontSize: '8px', color: '#64748b' }}>{emp.mode}</span>
+                      </td>
+                      <td style={{ padding: '8px 4px' }}>
+                        <div style={{ color: '#334155' }}>{emp.location}</div>
+                        <div style={{ color: '#94a3b8', fontSize: '8px' }}>{emp.time}</div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Off Duty Employees */}
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontWeight: 'bold', color: '#1e293b' }}>Off Duty Employees (0)</span>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <select style={{ padding: '2px 4px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>All</option></select>
+                  <select style={{ padding: '2px 4px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>All</option></select>
+                  <input type="text" placeholder="🔍 Search Here" style={{ padding: '2px 4px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px', width: '80px' }} />
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '180px', color: '#94a3b8', fontSize: '11px' }}>
+                No Data found
+              </div>
+            </div>
+
+          </div>
+
+          {/* ROW 3: KPI Stat Cards Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+            {[
+              { label: 'Forms Filled', count: '0', change: '↑0%' },
+              { label: 'Photos Uploaded', count: '0', change: '↑0%' },
+              { label: 'New Clients', count: '0', change: '↑0%' },
+              { label: 'Orders Submitted', count: '0', change: '↑0%' },
+            ].map((kpi) => (
+              <div key={kpi.label} style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
+                <div style={{ color: '#475569', fontSize: '10px', fontWeight: 'bold' }}>{kpi.label}</div>
+                <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '4px 0' }}>
+                  {kpi.count} <span style={{ color: '#22c55e', fontSize: '10px', fontWeight: 'normal' }}>{kpi.change}</span>
+                </div>
+                <button style={{ backgroundColor: '#f1f5f9', border: 'none', borderRadius: '3px', padding: '2px 6px', fontSize: '9px', color: '#64748b' }}>0 Yesterday</button>
+              </div>
+            ))}
+          </div>
+
+          {/* ROW 4: Expense Overview & Daily Working Hours Chart */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: '16px' }}>
+            
+            {/* Daily Average Working Hours */}
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontWeight: 'bold', color: '#1e293b' }}>Daily Average Working Hours</span>
+                <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>This Month</option></select>
+              </div>
+              <div style={{ height: '140px', display: 'flex', alignItems: 'flex-end', gap: '6px', padding: '10px 0', borderBottom: '1px solid #cbd5e1' }}>
+                {[0,0,0,0,0,0,0,0,0,0,0,8,7,10,11,9,10,0,0,0,0,0,0].map((h, idx) => (
+                  <div key={idx} style={{ flex: 1, height: `${(h / 12) * 100}%`, backgroundColor: '#2563eb', borderRadius: '2px 2px 0 0' }} />
                 ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+              </div>
+            </div>
 
-        {/* Subscription Billing History Table */}
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-          <h3 style={{ marginTop: 0, color: '#1e293b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <History size={20} color="#2563eb" /> Subscription Billing History
-          </h3>
+            {/* Expense Overview Pie/Legend Block */}
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontWeight: 'bold', color: '#1e293b' }}>Expense Overview</span>
+                <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>This Month</option></select>
+              </div>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '14px' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
-                <th style={{ padding: '12px' }}>Date</th>
-                <th style={{ padding: '12px' }}>Transaction ID</th>
-                <th style={{ padding: '12px' }}>Seats Added</th>
-                <th style={{ padding: '12px' }}>Amount Paid</th>
-                <th style={{ padding: '12px' }}>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {billingHistory.length === 0 ? (
-                <tr>
-                  <td colSpan="5" style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>No seat upgrade transactions recorded yet.</td>
-                </tr>
-              ) : (
-                billingHistory.map((inv) => (
-                  <tr key={inv._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '12px', color: '#64748b' }}>{new Date(inv.createdAt).toLocaleDateString()}</td>
-                    <td style={{ padding: '12px', fontWeight: 'bold', fontFamily: 'monospace' }}>{inv.transactionId}</td>
-                    <td style={{ padding: '12px' }}>+{inv.additionalSeatsRequested} Seats</td>
-                    <td style={{ padding: '12px', fontWeight: 'bold', color: '#16a34a' }}>${inv.amountPaid}</td>
-                    <td style={{ padding: '12px' }}>
-                      <span style={{ backgroundColor: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 'bold' }}>
-                        {inv.paymentStatus.toUpperCase()}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', height: '140px' }}>
+                <div style={{ width: '90px', height: '90px', borderRadius: '50%', backgroundColor: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>
+                  100%
+                </div>
+                <div style={{ fontSize: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div><span style={{ color: '#64748b' }}>Total Expenses:</span> <strong style={{ color: '#0f172a' }}>₹3620.00 (18)</strong></div>
+                  <div><span style={{ color: '#22c55e' }}>● Approved Expenses:</span> <strong style={{ color: '#0f172a' }}>₹3620.00 (18)</strong></div>
+                  <div><span style={{ color: '#2563eb' }}>● Paid Out:</span> <strong style={{ color: '#0f172a' }}>₹0 (0)</strong></div>
+                  <div><span style={{ color: '#eab308' }}>● Pending Expenses:</span> <strong style={{ color: '#0f172a' }}>₹0 (0)</strong></div>
+                  <div><span style={{ color: '#ef4444' }}>● Rejected Expenses:</span> <strong style={{ color: '#0f172a' }}>₹0 (0)</strong></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
         </div>
 
       </div>
+
     </div>
   );
 };
