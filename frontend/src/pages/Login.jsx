@@ -10,7 +10,7 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const { setAuth } = useAuthStore();
+  const setAuth = useAuthStore((state) => state.setAuth);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -19,78 +19,89 @@ const Login = () => {
 
     try {
       const res = await axios.post('https://sfa-saas-platform.onrender.com/api/auth/login', {
-        email,
-        password
+        email: email.trim(),
+        password: password.trim()
       });
 
       if (res.data.success) {
         const { token, user } = res.data;
         localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
+        setAuth(user, token);
 
-        if (setAuth) setAuth(user, token);
-
-        // Direct Routing Logic Based on Role
-        const role = user.role?.toLowerCase();
-        if (role === 'superadmin') {
+        // Role-based Direction Routing
+        if (user.role === 'superadmin') {
           navigate('/superadmin');
-        } else if (role === 'admin') {
-          navigate('/dashboard'); // Client Admin goes to Billing & Team Management
+        } else if (user.role === 'admin') {
+          navigate('/dashboard');
         } else {
-          navigate('/sfa'); // Standard Field Rep (balwant@acme.com) goes directly to SFA Hub
+          navigate('/sfa');
         }
       }
     } catch (err) {
-      setErrorMsg(err.response?.data?.error || 'Invalid email or password');
+      console.error('Login error:', err);
+      setErrorMsg(err.response?.data?.error || 'Server cold-start delay or Network Error. Please retry in 10 seconds.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#f1f5f9', fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ backgroundColor: '#fff', padding: '32px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', width: '380px' }}>
-        <h2 style={{ textAlign: 'center', margin: '0 0 20px 0', color: '#0f172a', fontSize: '20px' }}>SaaS Portal Login</h2>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#0f172a', fontFamily: 'Inter, sans-serif' }}>
+      <div style={{ width: '380px', padding: '32px', backgroundColor: '#ffffff', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}>
         
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', backgroundColor: '#2563eb', color: '#fff', borderRadius: '10px', fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>
+            V
+          </div>
+          <h2 style={{ margin: 0, color: '#0f172a', fontSize: '22px' }}>VeloceSFA Login</h2>
+          <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>Enterprise Field Force Automation</p>
+        </div>
+
         {errorMsg && (
-          <div style={{ backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', padding: '10px', borderRadius: '6px', fontSize: '13px', marginBottom: '16px', textAlign: 'center' }}>
+          <div style={{ padding: '10px 12px', backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', borderRadius: '6px', fontSize: '12px', marginBottom: '16px', textAlign: 'center' }}>
             {errorMsg}
           </div>
         )}
 
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '12px', color: '#475569', marginBottom: '4px', fontWeight: '500' }}>Email Address</label>
-            <input 
-              type="email" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
-              required 
-              placeholder="e.g. balwant@acme.com"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }} 
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Email Address</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="clientadmin@acme.com"
+              required
+              style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box', fontSize: '14px' }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '12px', color: '#475569', marginBottom: '4px', fontWeight: '500' }}>Password</label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
-              required 
-              placeholder="••••••••"
-              style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }} 
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••••••"
+              required
+              style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box', fontSize: '14px' }}
             />
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
-            style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '12px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', marginTop: '6px' }}
+            style={{ width: '100%', padding: '12px', backgroundColor: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', marginTop: '6px' }}
           >
-            {loading ? 'Authenticating...' : 'Login'}
+            {loading ? 'Authenticating Server...' : 'Sign In'}
           </button>
         </form>
+
+        <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#f8fafc', borderRadius: '6px', fontSize: '11px', color: '#64748b', textAlign: 'center' }}>
+          <div><strong>Client Admin:</strong> clientadmin@acme.com[cite: 2]</div>
+          <div><strong>Password:</strong> acmepassword123[cite: 2]</div>
+        </div>
+
       </div>
     </div>
   );
