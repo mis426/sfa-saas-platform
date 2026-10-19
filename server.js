@@ -78,7 +78,6 @@ global.sfaAttendanceRulesStore = global.sfaAttendanceRulesStore || {
   allowManualPunch: false
 };
 
-// Phase 3: Expense Rules & Claims Store
 global.sfaExpenseRulesStore = global.sfaExpenseRulesStore || {
   perKmReimbursementRate: 8,
   dailyFoodAllowanceLimit: 500,
@@ -100,6 +99,13 @@ global.sfaExpenseClaimsStore = global.sfaExpenseClaimsStore || [
     status: 'Approved',
     createdAt: new Date()
   }
+];
+
+// Phase 4: Task Templates & BEAT Store
+global.sfaTaskTemplatesStore = global.sfaTaskTemplatesStore || [
+  { _id: 'task_1', name: 'Add Store Branding Photo', status: 'Active', teamVisibility: 'All Teams' },
+  { _id: 'task_2', name: 'New Outlet Onboarding Check', status: 'Active', teamVisibility: 'All Teams' },
+  { _id: 'task_3', name: 'Stock Audit & Order Form', status: 'Active', teamVisibility: 'All Teams' }
 ];
 
 global.auditLogsStore = global.auditLogsStore || [];
@@ -191,7 +197,7 @@ app.post('/api/settings/attendance-rules', authenticateToken, (req, res) => {
   res.json({ success: true, message: 'Attendance rules updated successfully!', rules: global.sfaAttendanceRulesStore });
 });
 
-// Phase 3: Expense Rules & Claims Endpoints
+// Expense Rules & Claims
 app.get('/api/settings/expense-rules', authenticateToken, (req, res) => res.json(global.sfaExpenseRulesStore));
 app.post('/api/settings/expense-rules', authenticateToken, (req, res) => {
   if (req.user?.role !== 'admin' && req.user?.role !== 'superadmin') {
@@ -201,10 +207,7 @@ app.post('/api/settings/expense-rules', authenticateToken, (req, res) => {
   res.json({ success: true, message: 'Expense limits updated successfully!', rules: global.sfaExpenseRulesStore });
 });
 
-app.get('/api/sfa/expenses', authenticateToken, (req, res) => {
-  res.json(global.sfaExpenseClaimsStore);
-});
-
+app.get('/api/sfa/expenses', authenticateToken, (req, res) => res.json(global.sfaExpenseClaimsStore));
 app.post('/api/sfa/expenses', authenticateToken, (req, res) => {
   const { category, amount, startKm, endKm, notes } = req.body;
   let computedAmount = parseFloat(amount) || 0;
@@ -247,6 +250,22 @@ app.patch('/api/sfa/expenses/:id/status', authenticateToken, (req, res) => {
     return res.json({ success: true, claim });
   }
   res.status(404).json({ error: 'Claim not found' });
+});
+
+// Phase 4: Task Templates & BEAT Endpoints
+app.get('/api/settings/task-templates', authenticateToken, (req, res) => res.json(global.sfaTaskTemplatesStore));
+app.post('/api/settings/task-templates', authenticateToken, (req, res) => {
+  if (req.user?.role !== 'admin' && req.user?.role !== 'superadmin') {
+    return res.status(403).json({ error: 'Only Client Admin can create task templates' });
+  }
+  const newTask = {
+    _id: 'task_' + Date.now(),
+    name: req.body.name,
+    status: 'Active',
+    teamVisibility: req.body.teamVisibility || 'All Teams'
+  };
+  global.sfaTaskTemplatesStore.unshift(newTask);
+  res.status(201).json({ success: true, task: newTask });
 });
 
 // Client Team & Billing

@@ -40,6 +40,10 @@ const Settings = () => {
     categories: ['Travel', 'Meals', 'Accommodation', 'Office Supplies', 'Telephone Bill']
   });
 
+  // State 4: Tasks & BEAT
+  const [tasks, setTasks] = useState([]);
+  const [newTaskName, setNewTaskName] = useState('');
+
   const [newCat, setNewCat] = useState('');
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
@@ -49,15 +53,17 @@ const Settings = () => {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [modRes, attRes, expRes] = await Promise.all([
+      const [modRes, attRes, expRes, taskRes] = await Promise.all([
         axios.get('https://sfa-saas-platform.onrender.com/api/settings/modules', { headers }).catch(() => ({ data: modules })),
         axios.get('https://sfa-saas-platform.onrender.com/api/settings/attendance-rules', { headers }).catch(() => ({ data: attendanceRules })),
-        axios.get('https://sfa-saas-platform.onrender.com/api/settings/expense-rules', { headers }).catch(() => ({ data: expenseRules }))
+        axios.get('https://sfa-saas-platform.onrender.com/api/settings/expense-rules', { headers }).catch(() => ({ data: expenseRules })),
+        axios.get('https://sfa-saas-platform.onrender.com/api/settings/task-templates', { headers }).catch(() => ({ data: [] }))
       ]);
 
       if (modRes.data) setModules(modRes.data);
       if (attRes.data) setAttendanceRules(attRes.data);
       if (expRes.data) setExpenseRules(expRes.data);
+      if (taskRes.data) setTasks(taskRes.data);
     } catch (err) {
       console.error('Fetch settings error:', err);
     }
@@ -108,6 +114,20 @@ const Settings = () => {
     } finally { setSaving(false); }
   };
 
+  const handleCreateTask = async (e) => {
+    e.preventDefault();
+    if (!newTaskName.trim()) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post('https://sfa-saas-platform.onrender.com/api/settings/task-templates', { name: newTaskName.trim() }, { headers: { Authorization: `Bearer ${token}` } });
+      setTasks([res.data.task, ...tasks]);
+      setNewTaskName('');
+      setMsg({ type: 'success', text: '🎉 Task Template Created!' });
+    } catch (err) {
+      setMsg({ type: 'error', text: 'Failed to create task.' });
+    }
+  };
+
   const handleAddCategory = () => {
     if (!newCat.trim()) return;
     setExpenseRules({ ...expenseRules, categories: [...expenseRules.categories, newCat.trim()] });
@@ -137,6 +157,7 @@ const Settings = () => {
           { id: 'modules', label: '🎛️ Feature Modules' },
           { id: 'attendance', label: '⏰ Attendance Rules' },
           { id: 'expenses', label: '💸 Expense & Conveyance' },
+          { id: 'tasks', label: '📋 Tasks & BEAT Plan' },
           { id: 'api', label: '🔑 API Access Tokens' }
         ].map(tab => (
           <button
@@ -237,7 +258,6 @@ const Settings = () => {
               </div>
 
               <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Grace Period (Minutes)</label>
@@ -260,46 +280,12 @@ const Settings = () => {
                       style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
                     />
                   </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Auto Sign-Out Time</label>
-                    <input 
-                      type="time" 
-                      value={attendanceRules.autoCheckoutTime} 
-                      onChange={(e) => setAttendanceRules({...attendanceRules, autoCheckoutTime: e.target.value})}
-                      disabled={!isAdmin}
-                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
-                    />
-                  </div>
                 </div>
-
-                <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: isAdmin ? 'pointer' : 'not-allowed' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={attendanceRules.strictMode} 
-                      onChange={(e) => setAttendanceRules({...attendanceRules, strictMode: e.target.checked})}
-                      disabled={!isAdmin}
-                    />
-                    <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a' }}>Geo-Fence Strict Mode (Reject punch-in if outside store boundary)</span>
-                  </label>
-
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: isAdmin ? 'pointer' : 'not-allowed' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={attendanceRules.preventEarlyPunchOut} 
-                      onChange={(e) => setAttendanceRules({...attendanceRules, preventEarlyPunchOut: e.target.checked})}
-                      disabled={!isAdmin}
-                    />
-                    <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a' }}>Prevent Early Punch-Out before shift completion</span>
-                  </label>
-                </div>
-
               </div>
             </>
           )}
 
-          {/* TAB 3: EXPENSE & ODOMETER CONVEYANCE RULES */}
+          {/* TAB 3: EXPENSE RULES */}
           {activeSubTab === 'expenses' && (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -317,7 +303,6 @@ const Settings = () => {
               </div>
 
               <div style={{ backgroundColor: '#fff', padding: '24px', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Per-KM Rate (₹ / KM)</label>
@@ -329,55 +314,58 @@ const Settings = () => {
                       style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
                     />
                   </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Daily Food Limit (₹)</label>
-                    <input 
-                      type="number" 
-                      value={expenseRules.dailyFoodAllowanceLimit} 
-                      onChange={(e) => setExpenseRules({...expenseRules, dailyFoodAllowanceLimit: parseFloat(e.target.value) || 0})}
-                      disabled={!isAdmin}
-                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Daily Hotel Limit (₹)</label>
-                    <input 
-                      type="number" 
-                      value={expenseRules.dailyHotelAllowanceLimit} 
-                      onChange={(e) => setExpenseRules({...expenseRules, dailyHotelAllowanceLimit: parseFloat(e.target.value) || 0})}
-                      disabled={!isAdmin}
-                      style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box' }}
-                    />
-                  </div>
                 </div>
+              </div>
+            </>
+          )}
 
-                <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
-                  <h3 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#0f172a' }}>Expense Categories</h3>
-                  
-                  {isAdmin && (
-                    <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
-                      <input 
-                        type="text" 
-                        placeholder="Add New Category (e.g., Toll Tax)" 
-                        value={newCat} 
-                        onChange={(e) => setNewCat(e.target.value)} 
-                        style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1' }} 
-                      />
-                      <button onClick={handleAddCategory} style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>+ Add</button>
-                    </div>
-                  )}
+          {/* TAB 4: TASKS & BEAT JOURNEY PLAN */}
+          {activeSubTab === 'tasks' && (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                <div>
+                  <h1 style={{ margin: 0, fontSize: '24px', color: '#0f172a' }}>BEAT Plan & Custom Tasks</h1>
+                  <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
+                    Define custom task templates (Photo Capture, Check-In, Forms) for store visit execution.
+                  </p>
+                </div>
+              </div>
 
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                    {expenseRules.categories.map((c, idx) => (
-                      <span key={idx} style={{ backgroundColor: '#f1f5f9', color: '#334155', padding: '6px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', border: '1px solid #cbd5e1' }}>
-                        {c}
-                      </span>
+              {isAdmin && (
+                <form onSubmit={handleCreateTask} style={{ display: 'flex', gap: '12px', marginBottom: '20px', backgroundColor: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Task Template Name (e.g., Audit Shelf Display)" 
+                    value={newTaskName} 
+                    onChange={(e) => setNewTaskName(e.target.value)} 
+                    required
+                    style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  />
+                  <button type="submit" style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>+ Add Task Template</button>
+                </form>
+              )}
+
+              <div style={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
+                      <th style={{ padding: '12px', textAlign: 'left' }}>Task Name</th>
+                      <th style={{ padding: '12px', textAlign: 'left' }}>Status</th>
+                      <th style={{ padding: '12px', textAlign: 'left' }}>Team Visibility</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tasks.map((t) => (
+                      <tr key={t._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '12px', fontWeight: 'bold', color: '#0f172a' }}>{t.name}</td>
+                        <td style={{ padding: '12px' }}>
+                          <span style={{ backgroundColor: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 'bold' }}>{t.status}</span>
+                        </td>
+                        <td style={{ padding: '12px', color: '#64748b' }}>{t.teamVisibility}</td>
+                      </tr>
                     ))}
-                  </div>
-                </div>
-
+                  </tbody>
+                </table>
               </div>
             </>
           )}
