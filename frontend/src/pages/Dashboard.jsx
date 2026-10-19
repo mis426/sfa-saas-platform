@@ -6,11 +6,15 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('Overview');
   const [activeSidebar, setActiveSidebar] = useState('Dashboard');
 
+  // Attendance Sub-tab state
+  const [activeAttendanceTab, setActiveAttendanceTab] = useState('Overview');
+
   // Filter & Search States across tabs
   const [filterStatus, setFilterStatus] = useState('All');
   const [cardSearch, setCardSearch] = useState('');
   const [complianceSearch, setComplianceSearch] = useState('');
   const [siteEmpSearch, setSiteEmpSearch] = useState('');
+  const [attendanceSearch, setAttendanceSearch] = useState('');
 
   const employees = [
     {
@@ -19,6 +23,11 @@ const Dashboard = () => {
       code: '(8290)',
       phone: '+918565856862',
       status: 'Punched Out : Last Friday at 8:24 PM',
+      punchedInTime: 'Last Friday at 9:21 AM',
+      punchedOutTime: 'Last Friday at 8:24 PM',
+      inFrom: 'NA',
+      outFrom: 'NA',
+      mode: 'Manual',
       isPunchedIn: false,
       location: 'Rai Vihar Ph-2 Colony, Semra, Gorakhpur',
       time: '3 days ago',
@@ -40,6 +49,11 @@ const Dashboard = () => {
       code: '(20)',
       phone: '+919212552247',
       status: 'Punched Out : Last Friday at 8:11 PM',
+      punchedInTime: 'Last Friday at 9:47 AM',
+      punchedOutTime: 'Last Friday at 8:11 PM',
+      inFrom: 'NA',
+      outFrom: 'NA',
+      mode: 'Manual',
       isPunchedIn: false,
       location: 'Pitampura, New Delhi',
       time: '3 days ago',
@@ -61,6 +75,11 @@ const Dashboard = () => {
       code: '(PPL15M/038)',
       phone: '+919686456811',
       status: 'Punched Out : Last Friday at 8:43 PM',
+      punchedInTime: 'Last Friday at 8:58 AM',
+      punchedOutTime: 'Last Friday at 8:43 PM',
+      inFrom: 'NA',
+      outFrom: 'NA',
+      mode: 'Manual',
       isPunchedIn: false,
       location: 'Q4CJ+5C2, Humnabad, Karnataka 585330',
       time: '3 days ago',
@@ -82,6 +101,11 @@ const Dashboard = () => {
       code: '',
       phone: '+919753510787',
       status: 'Punched In : Last Friday at 11:46 AM',
+      punchedInTime: 'Last Friday at 11:46 AM',
+      punchedOutTime: '-',
+      inFrom: 'NA',
+      outFrom: '-',
+      mode: '',
       isPunchedIn: true,
       location: 'Tansen Road, Hazira, Birla Nagar, Gwalior',
       time: '3 days ago',
@@ -103,6 +127,11 @@ const Dashboard = () => {
       code: '(11535)',
       phone: '+919342611383',
       status: 'Punched Out : Last Friday at 6:16 PM',
+      punchedInTime: 'Last Friday at 9:08 AM',
+      punchedOutTime: 'Last Friday at 6:16 PM',
+      inFrom: 'NA',
+      outFrom: 'NA',
+      mode: 'Manual',
       isPunchedIn: false,
       location: '6X3J+F42, Kappagal, Karnataka 583103',
       time: '3 days ago',
@@ -154,21 +183,25 @@ const Dashboard = () => {
 
         <div style={{ flex: 1, padding: '8px 0', overflowY: 'auto' }}>
           {[
-            { name: 'Dashboard', icon: '📊', action: () => { setActiveSidebar('Dashboard'); setActiveTab('Overview'); } },
-            { name: 'Attendance', icon: '📋', action: () => navigate('/attendance') },
-            { name: 'Leaves', icon: '📅', action: () => setActiveSidebar('Leaves') },
-            { name: 'Organization', icon: '👥', action: () => setActiveSidebar('Organization') },
-            { name: 'Tasks', icon: '☑️', action: () => setActiveSidebar('Tasks') },
-            { name: 'Targets', icon: '🎯', action: () => setActiveSidebar('Targets') },
-            { name: 'Form', icon: '📝', action: () => setActiveSidebar('Form') },
-            { name: 'Order', icon: '🛒', action: () => setActiveSidebar('Order') },
-            { name: 'Expenses', icon: '💳', action: () => setActiveSidebar('Expenses') },
-            { name: 'Clients & Sites', icon: '🏢', action: () => setActiveSidebar('Clients & Sites') },
-            { name: 'Reports', icon: '📈', action: () => setActiveSidebar('Reports') },
+            { name: 'Dashboard', icon: '📊' },
+            { name: 'Attendance', icon: '📋' },
+            { name: 'Leaves', icon: '📅' },
+            { name: 'Organization', icon: '👥' },
+            { name: 'Tasks', icon: '☑️' },
+            { name: 'Targets', icon: '🎯' },
+            { name: 'Form', icon: '📝' },
+            { name: 'Order', icon: '🛒' },
+            { name: 'Expenses', icon: '💳' },
+            { name: 'Clients & Sites', icon: '🏢' },
+            { name: 'Reports', icon: '📈' },
           ].map((item) => (
             <div
               key={item.name}
-              onClick={item.action}
+              onClick={() => {
+                setActiveSidebar(item.name);
+                if (item.name === 'Dashboard') setActiveTab('Overview');
+                if (item.name === 'Attendance') setActiveAttendanceTab('Overview');
+              }}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -252,8 +285,40 @@ const Dashboard = () => {
           </div>
         )}
 
+        {/* SUB-HEADER TABS FOR ATTENDANCE */}
+        {activeSidebar === 'Attendance' && (
+          <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '0 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: '20px' }}>
+              {['Overview', 'Shifts', 'Attendance Muster', 'Roster', 'Regularisation Request', 'Attendance Punches'].map((tab) => (
+                <div
+                  key={tab}
+                  onClick={() => setActiveAttendanceTab(tab)}
+                  style={{
+                    padding: '10px 0',
+                    color: activeAttendanceTab === tab ? '#2563eb' : '#64748b',
+                    fontWeight: activeAttendanceTab === tab ? 'bold' : 'normal',
+                    borderBottom: activeAttendanceTab === tab ? '2px solid #2563eb' : '2px solid transparent',
+                    cursor: 'pointer',
+                    fontSize: '11px'
+                  }}
+                >
+                  {tab === 'Overview' && '📊 '}
+                  {tab === 'Shifts' && '⏱️ '}
+                  {tab === 'Attendance Muster' && '📜 '}
+                  {tab === 'Roster' && '📅 '}
+                  {tab === 'Regularisation Request' && '📝 '}
+                  {tab === 'Attendance Punches' && '📍 '}
+                  {tab}
+                </div>
+              ))}
+            </div>
+
+            <button style={{ backgroundColor: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '4px', padding: '3px 8px', fontSize: '11px', cursor: 'pointer' }}>🌪️</button>
+          </div>
+        )}
+
         {/* DYNAMIC CONTENT AREA */}
-        {activeSidebar === 'Dashboard' ? (
+        {activeSidebar === 'Dashboard' && (
           <>
             {/* 1. OVERVIEW TAB */}
             {activeTab === 'Overview' && (
@@ -345,97 +410,21 @@ const Dashboard = () => {
                     </div>
                   </div>
                 </div>
-
-                {/* ROW 3: KPI METRICS */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
-                  {[
-                    { label: 'Forms Filled', count: '0', change: '↑0%' },
-                    { label: 'Photos Uploaded', count: '0', change: '↑0%' },
-                    { label: 'New Clients', count: '0', change: '↑0%' },
-                    { label: 'Orders Submitted', count: '0', change: '↑0%' },
-                  ].map((kpi) => (
-                    <div key={kpi.label} style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
-                      <div style={{ color: '#475569', fontSize: '10px', fontWeight: 'bold' }}>{kpi.label}</div>
-                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '4px 0' }}>
-                        {kpi.count} <span style={{ color: '#22c55e', fontSize: '10px', fontWeight: 'normal' }}>{kpi.change}</span>
-                      </div>
-                      <button style={{ backgroundColor: '#f1f5f9', border: 'none', borderRadius: '3px', padding: '2px 6px', fontSize: '9px', color: '#64748b' }}>0 Yesterday</button>
-                    </div>
-                  ))}
-                </div>
-
-                {/* ROW 4 */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: '16px' }}>
-                  <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <span style={{ fontWeight: 'bold', color: '#1e293b' }}>Daily Average Working Hours</span>
-                      <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>This Month</option></select>
-                    </div>
-                    <div style={{ height: '140px', display: 'flex', alignItems: 'flex-end', gap: '6px', padding: '10px 0', borderBottom: '1px solid #cbd5e1' }}>
-                      {[0,0,0,0,0,0,0,0,0,0,0,8,7,10,11,9,10,0,0,0,0,0,0].map((h, idx) => (
-                        <div key={idx} style={{ flex: 1, height: `${(h / 12) * 100}%`, backgroundColor: '#2563eb', borderRadius: '2px 2px 0 0' }} />
-                      ))}
-                    </div>
-                  </div>
-
-                  <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <span style={{ fontWeight: 'bold', color: '#1e293b' }}>Expense Overview</span>
-                      <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>This Month</option></select>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', height: '140px' }}>
-                      <div style={{ width: '90px', height: '90px', borderRadius: '50%', backgroundColor: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '12px' }}>
-                        100%
-                      </div>
-                      <div style={{ fontSize: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <div><span style={{ color: '#64748b' }}>Total Expenses:</span> <strong style={{ color: '#0f172a' }}>₹3620.00 (18)</strong></div>
-                        <div><span style={{ color: '#22c55e' }}>● Approved Expenses:</span> <strong style={{ color: '#0f172a' }}>₹3620.00 (18)</strong></div>
-                        <div><span style={{ color: '#2563eb' }}>● Paid Out:</span> <strong style={{ color: '#0f172a' }}>₹0 (0)</strong></div>
-                        <div><span style={{ color: '#eab308' }}>● Pending Expenses:</span> <strong style={{ color: '#0f172a' }}>₹0 (0)</strong></div>
-                        <div><span style={{ color: '#ef4444' }}>● Rejected Expenses:</span> <strong style={{ color: '#0f172a' }}>₹0 (0)</strong></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
 
-            {/* 2. LIVE LOCATION TAB */}
+            {/* LIVE LOCATION TAB */}
             {activeTab === 'Live Location' && (
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ height: '36px', backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', flexShrink: 0 }}>
                   <div style={{ fontWeight: 'bold', color: '#334155', fontSize: '11px' }}>
                     Employees ({employees.filter(e => filterStatus === 'All' ? true : filterStatus === 'Punched In' ? e.isPunchedIn : !e.isPunchedIn).length})
                   </div>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div style={{ display: 'flex', backgroundColor: '#f1f5f9', padding: '2px', borderRadius: '4px' }}>
-                      {['All', 'Punched In', 'Punched Out'].map(st => (
-                        <button
-                          key={st}
-                          onClick={() => setFilterStatus(st)}
-                          style={{
-                            padding: '2px 8px',
-                            border: 'none',
-                            borderRadius: '3px',
-                            fontSize: '10px',
-                            fontWeight: 'bold',
-                            cursor: 'pointer',
-                            backgroundColor: filterStatus === st ? (st === 'Punched In' ? '#16a34a' : st === 'Punched Out' ? '#ef4444' : '#2563eb') : 'transparent',
-                            color: filterStatus === st ? '#fff' : '#64748b'
-                          }}
-                        >
-                          {st === 'All' ? '👥 All' : st === 'Punched In' ? '🟢 Punched In (1)' : '🔴 Punched Out (4)'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
                 <div style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
                   <div style={{ width: '260px', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0', overflowY: 'auto', zIndex: 10 }}>
-                    {employees.filter(e => filterStatus === 'All' ? true : filterStatus === 'Punched In' ? e.isPunchedIn : !e.isPunchedIn).map(emp => (
+                    {employees.map(emp => (
                       <div key={emp.id} style={{ padding: '10px 12px', borderBottom: '1px solid #f1f5f9' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                           <strong style={{ fontSize: '11px', color: '#0f172a' }}>{emp.name}</strong>
@@ -447,195 +436,182 @@ const Dashboard = () => {
                     ))}
                   </div>
 
-                  <div style={{ flex: 1, backgroundColor: '#e2e8f0', position: 'relative' }}>
-                    <iframe
-                      title="Unolo Realtime Map"
-                      width="100%"
-                      height="100%"
-                      frameBorder="0"
-                      src="https://maps.google.com/maps?q=20.5937,78.9629&z=5&output=embed"
-                    />
+                  <div style={{ flex: 1, backgroundColor: '#e2e8f0' }}>
+                    <iframe title="Unolo Map" width="100%" height="100%" frameBorder="0" src="https://maps.google.com/maps?q=20.5937,78.9629&z=5&output=embed" />
                   </div>
                 </div>
-              </div>
-            )}
-
-            {/* 3. TIMELINE TAB */}
-            {activeTab === 'Timeline' && (
-              <div style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
-                <div style={{ fontWeight: 'bold', marginBottom: '12px' }}>⏳ Datewise Punch Timeline Feed</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {employees.map(e => (
-                    <div key={e.id} style={{ padding: '12px', backgroundColor: '#ffffff', borderRadius: '6px', borderLeft: '3px solid #2563eb', border: '1px solid #e2e8f0' }}>
-                      <strong style={{ color: '#0f172a' }}>{e.name}</strong> - <span style={{ color: '#64748b' }}>{e.status}</span>
-                      <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>Location: {e.location}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 4. CARD VIEW TAB */}
-            {activeTab === 'Card View' && (
-              <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '12px' }}>Employees (5)</span>
-                  <input type="text" placeholder="🔍 Search Here..." value={cardSearch} onChange={(e) => setCardSearch(e.target.value)} style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '11px', width: '180px' }} />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
-                  {employees.filter(e => e.name.toLowerCase().includes(cardSearch.toLowerCase())).map((emp) => (
-                    <div key={emp.id} style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', borderLeft: emp.isPunchedIn ? '4px solid #16a34a' : '4px solid #ef4444', overflow: 'hidden' }}>
-                      <div style={{ padding: '12px', display: 'flex', justifyContent: 'space-between' }}>
-                        <div>
-                          <div style={{ fontWeight: 'bold', color: '#0f172a', fontSize: '12px' }}>{emp.name}</div>
-                          <div style={{ color: '#475569', fontSize: '10px' }}>{emp.phone}</div>
-                        </div>
-                        <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#16a34a' }}>🔋 {emp.battery}</span>
-                      </div>
-                      <div style={{ backgroundColor: emp.isPunchedIn ? '#f0fdf4' : '#fef2f2', padding: '6px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ color: emp.isPunchedIn ? '#16a34a' : '#dc2626', fontWeight: 'bold', fontSize: '10px' }}>{emp.status}</span>
-                        <button onClick={() => setActiveTab('Timeline')} style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '3px', padding: '2px 6px', fontSize: '9px', cursor: 'pointer' }}>Timeline 🔗</button>
-                      </div>
-                      <div style={{ padding: '10px 12px', color: '#475569', fontSize: '10px' }}>📍 {emp.location}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 5. COMPLIANCE STATUS TAB */}
-            {activeTab === 'Compliance Status' && (
-              <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '16px', display: 'flex', alignItems: 'center', gap: '20px' }}>
-                    <span style={{ fontSize: '32px', fontWeight: 'bold', color: '#2563eb' }}>0</span>
-                    <div style={{ fontSize: '11px', color: '#475569', fontWeight: 'bold' }}>No of People having bad app settings yesterday</div>
-                  </div>
-                  <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '16px', display: 'flex', alignItems: 'center', gap: '20px' }}>
-                    <span style={{ fontSize: '32px', fontWeight: 'bold', color: '#2563eb' }}>0</span>
-                    <div style={{ fontSize: '11px', color: '#475569', fontWeight: 'bold' }}>No of People having bad location settings yesterday</div>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>Compliance Status</span>
-                  <input type="text" placeholder="🔍 Search Employee.." value={complianceSearch} onChange={(e) => setComplianceSearch(e.target.value)} style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px', width: '180px' }} />
-                </div>
-
-                <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '10px' }}>
-                    <thead>
-                      <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
-                        <th style={{ padding: '8px 12px' }}>Employee</th>
-                        <th style={{ padding: '8px 12px' }}>App Version</th>
-                        <th style={{ padding: '8px 12px' }}>App Setting</th>
-                        <th style={{ padding: '8px 12px' }}>Location Setting</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {employees.filter(e => e.name.toLowerCase().includes(complianceSearch.toLowerCase())).map((emp) => (
-                        <tr key={emp.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#0f172a' }}>{emp.name}</td>
-                          <td style={{ padding: '10px 12px', color: '#64748b' }}>{emp.appVersion}</td>
-                          <td style={{ padding: '10px 12px' }}>{renderStatusBlocks(emp.appSettings)}</td>
-                          <td style={{ padding: '10px 12px' }}>{renderStatusBlocks(emp.locSettings)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* 6. SITE ATTENDANCE TAB */}
-            {activeTab === 'Site Attendance' && (
-              <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '16px' }}>
-                  
-                  {/* Left Donut Chart */}
-                  <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '12px' }}>Site Attendance (5)</span>
-                      <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>0m</option></select>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '160px' }}>
-                      <div style={{ position: 'relative', width: '130px', height: '130px', borderRadius: '50%', background: 'conic-gradient(#ef4444 0% 80%, #818cf8 80% 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <div style={{ position: 'absolute', color: '#ffffff', fontWeight: 'bold', fontSize: '10px', top: '25%', left: '20%' }}>80.00%</div>
-                        <div style={{ position: 'absolute', color: '#ffffff', fontWeight: 'bold', fontSize: '9px', bottom: '25%', right: '15%' }}>20.00%</div>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', borderTop: '1px solid #f1f5f9', paddingTop: '12px', marginTop: '12px', textAlign: 'center', fontSize: '9px' }}>
-                      <div><div style={{ fontWeight: 'bold', color: '#16a34a', fontSize: '12px' }}>● 0</div><div style={{ color: '#64748b' }}>At Site (Base)</div></div>
-                      <div><div style={{ fontWeight: 'bold', color: '#d97706', fontSize: '12px' }}>● 0</div><div style={{ color: '#64748b' }}>At Site (Not Base)</div></div>
-                      <div><div style={{ fontWeight: 'bold', color: '#6366f1', fontSize: '12px' }}>● 1</div><div style={{ color: '#64748b' }}>Not at any Site</div></div>
-                      <div><div style={{ fontWeight: 'bold', color: '#ef4444', fontSize: '12px' }}>● 4</div><div style={{ color: '#64748b' }}>Punched Out</div></div>
-                    </div>
-                  </div>
-
-                  {/* Right Table */}
-                  <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '12px' }}>Employees (5)</span>
-                      <input type="text" placeholder="🔍 Search Here" value={siteEmpSearch} onChange={(e) => setSiteEmpSearch(e.target.value)} style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px', width: '100px' }} />
-                    </div>
-
-                    <div style={{ flex: 1, overflowY: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '10px' }}>
-                        <thead>
-                          <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
-                            <th style={{ padding: '6px 8px' }}>Employee Name</th>
-                            <th style={{ padding: '6px 8px' }}>Site</th>
-                            <th style={{ padding: '6px 8px' }}>Team Name</th>
-                            <th style={{ padding: '6px 8px' }}>Status</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {employees.filter(e => e.name.toLowerCase().includes(siteEmpSearch.toLowerCase())).map((emp) => (
-                            <tr key={emp.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                              <td style={{ padding: '8px', fontWeight: 'bold' }}>{emp.name} {emp.code}</td>
-                              <td style={{ padding: '8px', color: '#64748b' }}>{emp.site}</td>
-                              <td style={{ padding: '8px', color: '#64748b' }}>{emp.teamName}</td>
-                              <td style={{ padding: '8px' }}>
-                                <span style={{ backgroundColor: emp.isPunchedIn ? '#f0fdf4' : '#fef2f2', color: emp.isPunchedIn ? '#16a34a' : '#ef4444', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold', fontSize: '9px' }}>
-                                  {emp.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                </div>
-
-                <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px' }}>
-                  <div style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '12px', marginBottom: '12px' }}>Site (0)</div>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '10px' }}>
-                    <thead>
-                      <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
-                        <th style={{ padding: '8px' }}>Site Name</th>
-                        <th style={{ padding: '8px' }}>Total</th>
-                        <th style={{ padding: '8px' }}>At Site (Base)</th>
-                        <th style={{ padding: '8px' }}>Not At Site (Base)</th>
-                        <th style={{ padding: '8px' }}>Expected</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td colSpan="5" style={{ textAlign: 'center', padding: '40px 0', color: '#94a3b8' }}>No Data found</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
               </div>
             )}
           </>
-        ) : (
+        )}
+
+        {/* 3. FULL ATTENDANCE MODULE VIEW (EMBEDDED PIXEL-EXACT) */}
+        {activeSidebar === 'Attendance' && (
+          <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            
+            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>Overview</div>
+
+            {/* ROW 1: REAL TIME STATUS GAUGE & OFF DUTY EMPLOYEES */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              
+              {/* Real Time Status */}
+              <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px' }}>
+                <div style={{ color: '#475569', fontWeight: 'bold', marginBottom: '12px', fontSize: '11px' }}>Real time Status (5) 🛈</div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ position: 'relative', width: '160px', height: '80px', overflow: 'hidden' }}>
+                    <div style={{ width: '160px', height: '160px', borderRadius: '50%', border: '18px solid #ef4444', borderTopColor: '#22c55e', transform: 'rotate(-45deg)', boxSizing: 'border-box' }} />
+                  </div>
+                  <div style={{ marginTop: '-30px', textAlign: 'center' }}>
+                    <span style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a' }}>5</span>
+                    <div style={{ fontSize: '10px', color: '#64748b' }}>All Employees</div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginTop: '16px', fontSize: '10px', fontWeight: 'bold' }}>
+                    <span style={{ color: '#22c55e' }}>● 1 Punched In</span>
+                    <span style={{ color: '#ef4444' }}>● 4 Punched Out</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Off Duty Employees */}
+              <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <span style={{ fontWeight: 'bold', color: '#475569', fontSize: '11px' }}>Off Duty Employees</span>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>All</option></select>
+                    <input type="text" placeholder="🔍 Search Here" style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px', width: '100px' }} />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '140px', color: '#94a3b8', fontSize: '11px' }}>
+                  No Data found
+                </div>
+              </div>
+
+            </div>
+
+            {/* ROW 2: ATTENDANCE OVERVIEW CHART & AVERAGE WORKING HOURS */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              
+              {/* Attendance Overview Chart Box */}
+              <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '11px' }}>Attendance Overview</span>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>Present</option></select>
+                    <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>This Week</option></select>
+                    <button style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', borderRadius: '50%', width: '18px', height: '18px', fontSize: '9px', cursor: 'pointer' }}>%</button>
+                  </div>
+                </div>
+
+                <div style={{ height: '120px', borderLeft: '1px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 10px' }}>
+                  {['19-10', '20-10', '21-10', '22-10', '23-10', '24-10', '25-10'].map(dt => (
+                    <span key={dt} style={{ fontSize: '9px', color: '#64748b', marginBottom: '-16px' }}>{dt}</span>
+                  ))}
+                  <div style={{ position: 'absolute', top: '10px', left: '-25px', fontSize: '8px', color: '#94a3b8' }}>100%</div>
+                  <div style={{ position: 'absolute', top: '50px', left: '-20px', fontSize: '8px', color: '#94a3b8' }}>50%</div>
+                  <div style={{ position: 'absolute', top: '90px', left: '-15px', fontSize: '8px', color: '#94a3b8' }}>0%</div>
+                </div>
+              </div>
+
+              {/* Average Working Hours Chart Box */}
+              <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                  <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '11px' }}>Average Working Hours</span>
+                  <select style={{ padding: '2px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>This Week</option></select>
+                </div>
+
+                <div style={{ height: '120px', borderLeft: '1px solid #cbd5e1', borderBottom: '1px solid #cbd5e1', position: 'relative', display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', padding: '0 10px' }}>
+                  {['19-10', '20-10', '21-10', '22-10', '23-10', '24-10', '25-10'].map(dt => (
+                    <span key={dt} style={{ fontSize: '9px', color: '#64748b', marginBottom: '-16px' }}>{dt}</span>
+                  ))}
+                  <div style={{ position: 'absolute', top: '10px', left: '-15px', fontSize: '8px', color: '#94a3b8' }}>4</div>
+                  <div style={{ position: 'absolute', top: '40px', left: '-15px', fontSize: '8px', color: '#94a3b8' }}>3</div>
+                  <div style={{ position: 'absolute', top: '70px', left: '-15px', fontSize: '8px', color: '#94a3b8' }}>2</div>
+                  <div style={{ position: 'absolute', top: '100px', left: '-15px', fontSize: '8px', color: '#94a3b8' }}>0</div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* ROW 3: EMPLOYEE LIST (5) GRID TABLE */}
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '12px' }}>Employee List (5)</span>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="🔍 Search Employee"
+                    value={attendanceSearch}
+                    onChange={(e) => setAttendanceSearch(e.target.value)}
+                    style={{ padding: '3px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px', width: '160px' }}
+                  />
+                  <select style={{ padding: '3px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '10px' }}><option>All</option></select>
+                </div>
+              </div>
+
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '10px' }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
+                    <th style={{ padding: '8px' }}>Employee</th>
+                    <th style={{ padding: '8px' }}>Punched In</th>
+                    <th style={{ padding: '8px' }}>Punched Out</th>
+                    <th style={{ padding: '8px' }}>Location</th>
+                    <th style={{ padding: '8px' }}>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {employees.filter(e => e.name.toLowerCase().includes(attendanceSearch.toLowerCase())).map((emp) => (
+                    <tr key={emp.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '10px 8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ width: '26px', height: '26px', backgroundColor: '#bae6fd', color: '#0284c7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '9px' }}>SU</div>
+                        <div>
+                          <div style={{ fontWeight: 'bold', color: '#0f172a' }}>{emp.name}</div>
+                          <div style={{ color: '#94a3b8', fontSize: '9px' }}>{emp.code}</div>
+                        </div>
+                      </td>
+
+                      <td style={{ padding: '10px 8px' }}>
+                        <div style={{ color: '#0f172a', fontWeight: '500' }}>{emp.punchedInTime}</div>
+                        <div style={{ color: '#94a3b8', fontSize: '9px' }}>From: {emp.inFrom}</div>
+                      </td>
+
+                      <td style={{ padding: '10px 8px' }}>
+                        <div style={{ color: '#0f172a', fontWeight: '500' }}>{emp.punchedOutTime}</div>
+                        {emp.mode && (
+                          <div style={{ marginTop: '2px' }}>
+                            <span style={{ backgroundColor: '#fef3c7', border: '1px solid #fde68a', color: '#b45309', padding: '1px 5px', borderRadius: '3px', fontSize: '8px', fontWeight: 'bold' }}>{emp.mode}</span>
+                          </div>
+                        )}
+                      </td>
+
+                      <td style={{ padding: '10px 8px' }}>
+                        <div style={{ color: '#334155' }}>{emp.location}</div>
+                        <div style={{ color: '#94a3b8', fontSize: '8px' }}>{emp.time}</div>
+                      </td>
+
+                      <td style={{ padding: '10px 8px' }}>
+                        <span style={{
+                          backgroundColor: emp.isPunchedIn ? '#f0fdf4' : '#fef2f2',
+                          color: emp.isPunchedIn ? '#16a34a' : '#ef4444',
+                          border: `1px solid ${emp.isPunchedIn ? '#bbf7d0' : '#fecaca'}`,
+                          padding: '2px 8px',
+                          borderRadius: '10px',
+                          fontWeight: 'bold',
+                          fontSize: '9px'
+                        }}>
+                          {emp.isPunchedIn ? 'Punched In' : 'Punched Out'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        )}
+
+        {/* OTHER SIDEBAR MODULES */}
+        {activeSidebar !== 'Dashboard' && activeSidebar !== 'Attendance' && (
           <div style={{ flex: 1, padding: '20px', backgroundColor: '#ffffff' }}>
             <h3 style={{ margin: 0, color: '#0f172a' }}>{activeSidebar} Module</h3>
             <p style={{ color: '#64748b', marginTop: '8px' }}>Active operational view for trial mode.</p>
