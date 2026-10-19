@@ -6,7 +6,7 @@ const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('Overview');
   const [activeSidebar, setActiveSidebar] = useState('Dashboard');
 
-  // Filter & Search States across all tabs
+  // Filter & Search States across tabs
   const [filterStatus, setFilterStatus] = useState('All');
   const [cardSearch, setCardSearch] = useState('');
   const [complianceSearch, setComplianceSearch] = useState('');
@@ -154,21 +154,21 @@ const Dashboard = () => {
 
         <div style={{ flex: 1, padding: '8px 0', overflowY: 'auto' }}>
           {[
-            { name: 'Dashboard', icon: '📊' },
-            { name: 'Attendance', icon: '📋' },
-            { name: 'Leaves', icon: '📅' },
-            { name: 'Organization', icon: '👥' },
-            { name: 'Tasks', icon: '☑️' },
-            { name: 'Targets', icon: '🎯' },
-            { name: 'Form', icon: '📝' },
-            { name: 'Order', icon: '🛒' },
-            { name: 'Expenses', icon: '💳' },
-            { name: 'Clients & Sites', icon: '🏢' },
-            { name: 'Reports', icon: '📈' },
+            { name: 'Dashboard', icon: '📊', action: () => { setActiveSidebar('Dashboard'); setActiveTab('Overview'); } },
+            { name: 'Attendance', icon: '📋', action: () => navigate('/attendance') },
+            { name: 'Leaves', icon: '📅', action: () => setActiveSidebar('Leaves') },
+            { name: 'Organization', icon: '👥', action: () => setActiveSidebar('Organization') },
+            { name: 'Tasks', icon: '☑️', action: () => setActiveSidebar('Tasks') },
+            { name: 'Targets', icon: '🎯', action: () => setActiveSidebar('Targets') },
+            { name: 'Form', icon: '📝', action: () => setActiveSidebar('Form') },
+            { name: 'Order', icon: '🛒', action: () => setActiveSidebar('Order') },
+            { name: 'Expenses', icon: '💳', action: () => setActiveSidebar('Expenses') },
+            { name: 'Clients & Sites', icon: '🏢', action: () => setActiveSidebar('Clients & Sites') },
+            { name: 'Reports', icon: '📈', action: () => setActiveSidebar('Reports') },
           ].map((item) => (
             <div
               key={item.name}
-              onClick={() => { setActiveSidebar(item.name); if (item.name === 'Dashboard') setActiveTab('Overview'); }}
+              onClick={item.action}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -224,7 +224,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* SUB-HEADER TABS */}
+        {/* SUB-HEADER TABS FOR DASHBOARD */}
         {activeSidebar === 'Dashboard' && (
           <div style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '0 16px', display: 'flex', gap: '20px', flexShrink: 0 }}>
             {['Overview', 'Live Location', 'Timeline', 'Card View', 'Compliance Status', 'Site Attendance'].map((tab) => (
@@ -252,7 +252,7 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* DYNAMIC CONTENT AREA FOR ALL 6 TABS */}
+        {/* DYNAMIC CONTENT AREA */}
         {activeSidebar === 'Dashboard' ? (
           <>
             {/* 1. OVERVIEW TAB */}
@@ -260,7 +260,7 @@ const Dashboard = () => {
               <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>Realtime Dashboard</div>
 
-                {/* ROW 1: Status Gauge, Punched In, Staffing, Teamwise */}
+                {/* ROW 1 */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1.5fr', gap: '16px' }}>
                   <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
                     <div style={{ color: '#475569', fontWeight: 'bold', marginBottom: '12px', fontSize: '11px' }}>Real Time Status 🛈</div>
@@ -299,7 +299,7 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* ROW 2: Employees Grid & Off Duty */}
+                {/* ROW 2 */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', gap: '16px' }}>
                   <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -364,7 +364,7 @@ const Dashboard = () => {
                   ))}
                 </div>
 
-                {/* ROW 4: HOURS & EXPENSES */}
+                {/* ROW 4 */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: '16px' }}>
                   <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
@@ -553,7 +553,7 @@ const Dashboard = () => {
               <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.2fr', gap: '16px' }}>
                   
-                  {/* Left Donut Chart Block */}
+                  {/* Left Donut Chart */}
                   <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                       <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '12px' }}>Site Attendance (5)</span>
@@ -575,7 +575,7 @@ const Dashboard = () => {
                     </div>
                   </div>
 
-                  {/* Right Employees Grid Table */}
+                  {/* Right Table */}
                   <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px', display: 'flex', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                       <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '12px' }}>Employees (5)</span>
@@ -612,7 +612,6 @@ const Dashboard = () => {
 
                 </div>
 
-                {/* Bottom Site Grid */}
                 <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '16px' }}>
                   <div style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '12px', marginBottom: '12px' }}>Site (0)</div>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '10px' }}>
