@@ -3,15 +3,16 @@ import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('Overview');
-  const [activeSidebar, setActiveSidebar] = useState('Dashboard');
+  const [activeSidebar, setActiveSidebar] = useState('Attendance'); // Set Attendance as default active module
 
-  // Attendance Sub-tab state
+  // Dashboard Sub-tabs State
+  const [activeDashboardTab, setActiveDashboardTab] = useState('Overview');
+
+  // Attendance Sub-tabs State
   const [activeAttendanceTab, setActiveAttendanceTab] = useState('Overview');
   const [showLegend, setShowLegend] = useState(true);
 
-  // Filter & Search States across tabs
-  const [filterStatus, setFilterStatus] = useState('All');
+  // Filter & Search States
   const [cardSearch, setCardSearch] = useState('');
   const [complianceSearch, setComplianceSearch] = useState('');
   const [siteEmpSearch, setSiteEmpSearch] = useState('');
@@ -33,16 +34,11 @@ const Dashboard = () => {
       location: 'Rai Vihar Ph-2 Colony, Semra, Gorakhpur',
       time: '3 days ago',
       battery: '41%',
-      lat: 26.7606,
-      lng: 83.3732,
       site: '-',
-      sitePool: '-',
       teamName: 'Default',
       appVersion: 'Not Available',
       appSettings: ['none','none','none','none','none','none','none','none','none','none','none','good','good','good','good','none','none','none','none'],
       locSettings: ['none','none','none','none','none','none','none','none','none','none','none','good','good','good','good','none','none','none','none'],
-      appGood: 5, appBad: 0, appNoData: 14,
-      locGood: 5, locBad: 0, locNoData: 14
     },
     {
       id: 2,
@@ -59,21 +55,16 @@ const Dashboard = () => {
       location: 'Pitampura, New Delhi',
       time: '3 days ago',
       battery: '92%',
-      lat: 28.6990,
-      lng: 77.1384,
       site: '-',
-      sitePool: '-',
       teamName: 'Default',
       appVersion: 'Not Available',
       appSettings: ['none','none','none','none','none','none','none','none','none','none','none','good','good','bad','good','none','none','none','none'],
       locSettings: ['none','none','none','none','none','none','none','none','none','none','none','good','good','good','good','none','none','none','none'],
-      appGood: 4, appBad: 1, appNoData: 14,
-      locGood: 5, locBad: 0, locNoData: 14
     },
     {
       id: 3,
       name: 'Sample User 3',
-      code: '(PPL15M/038)',
+      code: '(PPL15M/058)',
       phone: '+919686456811',
       status: 'Punched Out : Last Friday at 8:43 PM',
       punchedInTime: 'Last Friday at 8:58 AM',
@@ -85,16 +76,11 @@ const Dashboard = () => {
       location: 'Q4CJ+5C2, Humnabad, Karnataka 585330',
       time: '3 days ago',
       battery: '80%',
-      lat: 17.7088,
-      lng: 77.1320,
       site: '-',
-      sitePool: '-',
       teamName: 'Default',
       appVersion: 'Not Available',
       appSettings: ['none','none','none','none','none','none','none','none','none','none','none','good','good','good','good','none','none','none','none'],
       locSettings: ['none','none','none','none','none','none','none','none','none','none','none','good','good','good','good','none','none','none','none'],
-      appGood: 5, appBad: 0, appNoData: 14,
-      locGood: 5, locBad: 0, locNoData: 14
     },
     {
       id: 4,
@@ -111,16 +97,11 @@ const Dashboard = () => {
       location: 'Tansen Road, Hazira, Birla Nagar, Gwalior',
       time: '3 days ago',
       battery: '88%',
-      lat: 26.2183,
-      lng: 78.1828,
       site: '-',
-      sitePool: '-',
       teamName: 'Default',
       appVersion: 'Not Available',
       appSettings: ['none','none','none','none','none','none','none','none','none','none','none','bad','bad','bad','good','none','none','none','none'],
       locSettings: ['none','none','none','none','none','none','none','none','none','none','none','good','good','bad','good','none','none','none','none'],
-      appGood: 1, appBad: 4, appNoData: 14,
-      locGood: 4, locBad: 1, locNoData: 14
     },
     {
       id: 5,
@@ -137,16 +118,11 @@ const Dashboard = () => {
       location: '6X3J+F42, Kappagal, Karnataka 583103',
       time: '3 days ago',
       battery: '37%',
-      lat: 15.1394,
-      lng: 76.9214,
       site: '-',
-      sitePool: '-',
       teamName: 'Default',
       appVersion: 'Not Available',
       appSettings: ['none','none','none','none','none','none','none','none','none','none','none','bad','good','good','good','none','none','none','none'],
       locSettings: ['none','none','none','none','none','none','none','none','none','none','none','good','good','good','good','none','none','none','none'],
-      appGood: 4, appBad: 1, appNoData: 14,
-      locGood: 5, locBad: 0, locNoData: 14
     },
   ];
 
@@ -173,10 +149,10 @@ const Dashboard = () => {
   );
 
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100vw', backgroundColor: '#f1f5f9', fontFamily: 'Inter, -apple-system, sans-serif', fontSize: '12px', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: '100vh', width: '100vw', backgroundColor: '#f1f5f9', fontFamily: 'Inter, -apple-system, sans-serif', fontSize: '11px', overflow: 'hidden' }}>
       
       {/* 1. LEFT SIDEBAR */}
-      <div style={{ width: '190px', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+      <div style={{ width: '180px', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
         <div style={{ padding: '14px 16px', fontWeight: 'bold', fontSize: '13px', color: '#1e293b', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ width: '22px', height: '22px', backgroundColor: '#2563eb', color: '#fff', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: 'bold' }}>U</div>
           Unolo SFA
@@ -200,7 +176,7 @@ const Dashboard = () => {
               key={item.name}
               onClick={() => {
                 setActiveSidebar(item.name);
-                if (item.name === 'Dashboard') setActiveTab('Overview');
+                if (item.name === 'Dashboard') setActiveDashboardTab('Overview');
                 if (item.name === 'Attendance') setActiveAttendanceTab('Overview');
               }}
               style={{
@@ -264,12 +240,12 @@ const Dashboard = () => {
             {['Overview', 'Live Location', 'Timeline', 'Card View', 'Compliance Status', 'Site Attendance'].map((tab) => (
               <div
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => setActiveDashboardTab(tab)}
                 style={{
                   padding: '10px 0',
-                  color: activeTab === tab ? '#2563eb' : '#64748b',
-                  fontWeight: activeTab === tab ? 'bold' : 'normal',
-                  borderBottom: activeTab === tab ? '2px solid #2563eb' : '2px solid transparent',
+                  color: activeDashboardTab === tab ? '#2563eb' : '#64748b',
+                  fontWeight: activeDashboardTab === tab ? 'bold' : 'normal',
+                  borderBottom: activeDashboardTab === tab ? '2px solid #2563eb' : '2px solid transparent',
                   cursor: 'pointer',
                   fontSize: '11px'
                 }}
@@ -318,14 +294,14 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* DYNAMIC CONTENT AREA */}
+        {/* DYNAMIC CONTENT AREA FOR DASHBOARD MODULE */}
         {activeSidebar === 'Dashboard' && (
-          <>
-            {/* 1. OVERVIEW TAB */}
-            {activeTab === 'Overview' && (
-              <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ flex: 1, padding: '16px', overflowY: 'auto' }}>
+            {activeDashboardTab === 'Overview' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>Realtime Dashboard</div>
-
+                
+                {/* Realtime Status Row */}
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1.5fr', gap: '16px' }}>
                   <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
                     <div style={{ color: '#475569', fontWeight: 'bold', marginBottom: '12px', fontSize: '11px' }}>Real Time Status 🛈</div>
@@ -363,62 +339,16 @@ const Dashboard = () => {
                     </div>
                   </div>
                 </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 1.2fr', gap: '16px' }}>
-                  <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                      <span style={{ fontWeight: 'bold', color: '#1e293b' }}>Employees (5)</span>
-                    </div>
-
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '10px' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid #e2e8f0', color: '#64748b' }}>
-                          <th style={{ padding: '6px 4px' }}>Employee</th>
-                          <th style={{ padding: '6px 4px' }}>Attendance</th>
-                          <th style={{ padding: '6px 4px' }}>Last Location</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {employees.map((emp) => (
-                          <tr key={emp.id} style={{ borderBottom: '1px solid #f8fafc' }}>
-                            <td style={{ padding: '8px 4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <div style={{ width: '24px', height: '24px', backgroundColor: '#bae6fd', color: '#0284c7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '9px' }}>SU</div>
-                              <div>
-                                <div style={{ fontWeight: 'bold', color: '#0f172a' }}>{emp.name}</div>
-                                <div style={{ color: '#94a3b8', fontSize: '9px' }}>{emp.code}</div>
-                              </div>
-                            </td>
-                            <td style={{ padding: '8px 4px' }}>
-                              <div style={{ color: emp.isPunchedIn ? '#16a34a' : '#0f172a', fontWeight: '500' }}>{emp.status}</div>
-                              <span style={{ backgroundColor: '#f1f5f9', border: '1px solid #e2e8f0', padding: '0 4px', borderRadius: '2px', fontSize: '8px', color: '#64748b' }}>Manual</span>
-                            </td>
-                            <td style={{ padding: '8px 4px' }}>
-                              <div style={{ color: '#334155' }}>{emp.location}</div>
-                              <div style={{ color: '#94a3b8', fontSize: '8px' }}>{emp.time}</div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div style={{ backgroundColor: '#ffffff', borderRadius: '6px', border: '1px solid #e2e8f0', padding: '12px' }}>
-                    <div style={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '12px' }}>Off Duty Employees (0)</div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '180px', color: '#94a3b8' }}>
-                      No Data found
-                    </div>
-                  </div>
-                </div>
               </div>
             )}
-          </>
+          </div>
         )}
 
-        {/* 3. FULL ATTENDANCE MODULE VIEW (UNOLO EXACT) */}
+        {/* DYNAMIC CONTENT AREA FOR ATTENDANCE MODULE */}
         {activeSidebar === 'Attendance' && (
           <div style={{ flex: 1, padding: '16px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             
-            {/* 1. OVERVIEW SUB TAB */}
+            {/* SUB TAB 1: OVERVIEW */}
             {activeAttendanceTab === 'Overview' && (
               <>
                 <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>Overview</div>
@@ -527,7 +457,7 @@ const Dashboard = () => {
               </>
             )}
 
-            {/* 2. SHIFTS SUB TAB */}
+            {/* SUB TAB 2: SHIFTS */}
             {activeAttendanceTab === 'Shifts' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -564,7 +494,7 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* 3. ATTENDANCE MUSTER SUB TAB */}
+            {/* SUB TAB 3: ATTENDANCE MUSTER */}
             {activeAttendanceTab === 'Attendance Muster' && (
               <div style={{ display: 'flex', gap: '16px' }}>
                 <div style={{ flex: 1, backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '16px' }}>
@@ -598,7 +528,7 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* 4. ROSTER SUB TAB */}
+            {/* SUB TAB 4: ROSTER */}
             {activeAttendanceTab === 'Roster' && (
               <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '16px' }}>
                 <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1e293b', marginBottom: '12px' }}>Rosters</div>
@@ -623,7 +553,7 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* 5. REGULARISATION REQUEST SUB TAB */}
+            {/* SUB TAB 5: REGULARISATION REQUEST */}
             {activeAttendanceTab === 'Regularisation Request' && (
               <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '16px' }}>
                 <span style={{ fontWeight: 'bold', fontSize: '12px' }}>Regularisation Request (0)</span>
@@ -631,7 +561,7 @@ const Dashboard = () => {
               </div>
             )}
 
-            {/* 6. ATTENDANCE PUNCHES SUB TAB */}
+            {/* SUB TAB 6: ATTENDANCE PUNCHES */}
             {activeAttendanceTab === 'Attendance Punches' && (
               <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '16px' }}>
                 <span style={{ fontWeight: 'bold', fontSize: '12px' }}>Attendance Punches (0)</span>
