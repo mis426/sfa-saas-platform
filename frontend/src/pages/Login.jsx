@@ -12,7 +12,6 @@ const Login = () => {
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
 
-  // Clear stale tokens on login screen mount
   useEffect(() => {
     localStorage.removeItem('token');
   }, []);
@@ -23,12 +22,20 @@ const Login = () => {
     setLoading(true);
 
     try {
+      // Step 1: Health Check Ping to ensure Render instance is active
+      try {
+        await axios.get('https://sfa-saas-platform.onrender.com/health', { timeout: 30000 });
+      } catch (pingErr) {
+        console.log('Health ping warming up...');
+      }
+
+      // Step 2: Main Authentication Request with 40s timeout
       const res = await axios.post('https://sfa-saas-platform.onrender.com/api/auth/login', {
         email: email.trim(),
         password: password.trim()
       }, {
         headers: { 'Content-Type': 'application/json' },
-        timeout: 15000
+        timeout: 40000
       });
 
       if (res.data && res.data.success) {
@@ -37,16 +44,14 @@ const Login = () => {
         setAuth(user, token);
         navigate('/dashboard', { replace: true });
       } else {
-        setErrorMsg('Invalid login response from server.');
+        setErrorMsg('Invalid login credentials.');
       }
     } catch (err) {
       console.error('Login error:', err);
       if (err.response && err.response.data && err.response.data.error) {
         setErrorMsg(err.response.data.error);
-      } else if (err.code === 'ECONNABORTED') {
-        setErrorMsg('Request timed out. Please click Sign In again.');
       } else {
-        setErrorMsg('Unable to connect to backend server. Please retry.');
+        setErrorMsg('Backend is spinning up. Please click Sign In once more.');
       }
     } finally {
       setLoading(false);
@@ -101,7 +106,7 @@ const Login = () => {
             disabled={loading}
             style={{ width: '100%', padding: '12px', backgroundColor: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '14px', marginTop: '6px' }}
           >
-            {loading ? 'Authenticating...' : 'Sign In'}
+            {loading ? 'Connecting & Authenticating...' : 'Sign In'}
           </button>
         </form>
 
