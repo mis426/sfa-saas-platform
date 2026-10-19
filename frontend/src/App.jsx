@@ -5,8 +5,18 @@ import Dashboard from './pages/Dashboard';
 import SFADashboard from './pages/SFADashboard';
 import SuperAdmin from './pages/SuperAdmin';
 import Settings from './pages/Settings';
-import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
+import { useAuthStore } from './store/useAuthStore';
+
+// Simple Inline Auth Guard
+const AuthGuard = ({ children }) => {
+  const token = localStorage.getItem('token');
+  const user = useAuthStore((state) => state.user);
+  if (token || user) {
+    return children;
+  }
+  return <Navigate to="/login" replace />;
+};
 
 function App() {
   return (
@@ -15,30 +25,29 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         
-        {/* Main Unolo Realtime Dashboard Suite */}
+        {/* Main Unolo Realtime Dashboard Route */}
         <Route path="/dashboard" element={
-          <ProtectedRoute>
+          <AuthGuard>
             <Dashboard />
-          </ProtectedRoute>
+          </AuthGuard>
         } />
 
-        {/* Alias Route to ensure landing on Realtime Dashboard */}
         <Route path="/sfa" element={
-          <ProtectedRoute>
+          <AuthGuard>
             <Dashboard />
-          </ProtectedRoute>
+          </AuthGuard>
         } />
 
         <Route path="/settings" element={
-          <ProtectedRoute>
+          <AuthGuard>
             <Settings />
-          </ProtectedRoute>
+          </AuthGuard>
         } />
 
         <Route path="/superadmin" element={
-          <ProtectedRoute>
+          <AuthGuard>
             <SuperAdmin />
-          </ProtectedRoute>
+          </AuthGuard>
         } />
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
