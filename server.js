@@ -39,17 +39,6 @@ global.tenantsStore = global.tenantsStore || [
     maxAllowedUsers: 10,
     activeUsersCount: 3,
     status: 'active',
-    clientAdminName: 'MIS Admin',
-    clientAdminEmail: 'mis@actionlifestyle.com',
-    clientAdminPassword: 'mis@123',
-    createdAt: new Date()
-  },
-  {
-    _id: 'tenant_acme_secondary',
-    companyName: 'Acme Legacy',
-    maxAllowedUsers: 5,
-    activeUsersCount: 2,
-    status: 'active',
     clientAdminName: 'John Doe',
     clientAdminEmail: 'clientadmin@acme.com',
     clientAdminPassword: 'acmepassword123',
@@ -175,27 +164,14 @@ app.post(['/api/auth/login', '/auth/login'], (req, res) => {
   const cleanEmail = String(email).trim().toLowerCase();
   const cleanPassword = String(password).trim();
 
-  // 1. Unolo Client Admin / Direct Login Match
-  if ((cleanEmail === 'mis@actionlifestyle.com' && cleanPassword === 'mis@123') || 
-      (cleanEmail === 'clientadmin@acme.com' && cleanPassword === 'acmepassword123')) {
-    const user = { 
-      email: cleanEmail, 
-      role: 'admin', 
-      tenantId: 'tenant_acme_default', 
-      companyName: 'Action Lifestyle / Acme' 
-    };
-    const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
-    return res.json({ success: true, token, user });
-  }
-
-  // 2. SuperAdmin Login Route
+  // 1. SuperAdmin Login Route
   if (cleanEmail === 'superadmin@admin.com' && cleanPassword === 'adminpassword123') {
     const user = { email: cleanEmail, role: 'superadmin', name: 'System Super Admin' };
     const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
     return res.json({ success: true, token, user });
   }
 
-  // 3. Dynamic Tenant Admin Search
+  // 2. Client Admin Search
   const foundTenant = global.tenantsStore.find(
     t => t.clientAdminEmail?.toLowerCase() === cleanEmail && t.clientAdminPassword === cleanPassword
   );
@@ -211,7 +187,7 @@ app.post(['/api/auth/login', '/auth/login'], (req, res) => {
     return res.json({ success: true, token, user });
   }
 
-  // 4. Field Sales Rep Login Route
+  // 3. Field Sales Rep Search
   const foundUser = global.clientUsersStore.find(
     u => u.email?.toLowerCase() === cleanEmail && u.password === cleanPassword
   );
