@@ -66,6 +66,18 @@ const Dashboard = () => {
 
           <div style={{ margin: '12px 0', borderTop: '1px solid #f1f5f9' }} />
 
+          {/* LICENSE ALLOCATION & BILLING SHORTCUT */}
+          <div onClick={() => navigate('/sfa')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 16px', color: '#0284c7', cursor: 'pointer', fontWeight: 'bold' }}>
+            <span>💳</span>
+            <span>Licenses & Billing</span>
+          </div>
+
+          {/* SUPERADMIN CONTROL SHORTCUT */}
+          <div onClick={() => navigate('/superadmin')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 16px', color: '#7c3aed', cursor: 'pointer', fontWeight: 'bold' }}>
+            <span>🛡️</span>
+            <span>SuperAdmin Hub</span>
+          </div>
+
           <div onClick={() => navigate('/settings')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 16px', color: '#64748b', cursor: 'pointer', fontWeight: '500' }}>
             <span>⚙️</span>
             <span>Settings</span>
