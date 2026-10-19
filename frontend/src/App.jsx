@@ -6,16 +6,25 @@ import SFADashboard from './pages/SFADashboard';
 import SuperAdmin from './pages/SuperAdmin';
 import Settings from './pages/Settings';
 import Navbar from './components/Navbar';
-import { useAuthStore } from './store/useAuthStore';
 
-// Simple Inline Auth Guard
-const AuthGuard = ({ children }) => {
+const AuthGuard = ({ children, allowedRoles }) => {
   const token = localStorage.getItem('token');
-  const user = useAuthStore((state) => state.user);
-  if (token || user) {
-    return children;
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
   }
-  return <Navigate to="/login" replace />;
+
+  if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+    // If field user tries to access admin views, redirect to SFA
+    if (user.role === 'user' || user.role === 'sales_rep') {
+      return <Navigate to="/sfa" replace />;
+    }
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
 };
 
 function App() {
@@ -25,27 +34,29 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         
-        {/* Main Unolo Realtime Dashboard Route */}
+        {/* Unolo Admin Realtime Dashboard */}
         <Route path="/dashboard" element={
-          <AuthGuard>
+          <AuthGuard allowedRoles={['admin', 'superadmin']}>
             <Dashboard />
           </AuthGuard>
         } />
 
+        {/* Field Sales Rep Portal */}
         <Route path="/sfa" element={
-          <AuthGuard>
-            <Dashboard />
+          <AuthGuard allowedRoles={['user', 'sales_rep', 'admin', 'superadmin']}>
+            <SFADashboard />
           </AuthGuard>
         } />
 
+        {/* Settings Suite */}
         <Route path="/settings" element={
-          <AuthGuard>
+          <AuthGuard allowedRoles={['admin', 'superadmin']}>
             <Settings />
           </AuthGuard>
         } />
 
         <Route path="/superadmin" element={
-          <AuthGuard>
+          <AuthGuard allowedRoles={['superadmin']}>
             <SuperAdmin />
           </AuthGuard>
         } />
