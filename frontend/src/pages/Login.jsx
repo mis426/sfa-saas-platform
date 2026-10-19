@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store/useAuthStore';
 
 const Login = () => {
   const [email, setEmail] = useState('clientadmin@acme.com');
@@ -9,14 +7,7 @@ const Login = () => {
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate();
-  const setAuth = useAuthStore((state) => state.setAuth);
-
-  useEffect(() => {
-    localStorage.removeItem('token');
-  }, []);
-
-  const handleLogin = async (e) => {
+  const handleLogin = (e) => {
     e.preventDefault();
     setErrorMsg('');
     setLoading(true);
@@ -24,7 +15,7 @@ const Login = () => {
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
 
-    // Default Client Admin / SuperAdmin Instant Auth
+    // Direct Instant Synchronous Auth Session Creation
     if (cleanEmail === 'clientadmin@acme.com' && cleanPassword === 'acmepassword123') {
       const user = {
         email: 'clientadmin@acme.com',
@@ -33,34 +24,34 @@ const Login = () => {
         companyName: 'Acme Corp'
       };
       const token = 'active-clientadmin-token-2026';
+      
       localStorage.setItem('token', token);
-      setAuth(user, token);
-      navigate('/dashboard', { replace: true });
-      setLoading(false);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      // Hard redirect to clear stuck react-router state instantly
+      window.location.href = '/dashboard';
       return;
     }
 
-    try {
-      const res = await axios.post(
-        'https://sfa-saas-platform.onrender.com/api/auth/login',
-        { email: cleanEmail, password: cleanPassword },
-        { headers: { 'Content-Type': 'application/json' }, timeout: 15000 }
-      );
-
+    // Secondary Async API Fallback
+    axios.post('https://sfa-saas-platform.onrender.com/api/auth/login', {
+      email: cleanEmail,
+      password: cleanPassword
+    }, { timeout: 10000 })
+    .then((res) => {
       if (res.data && res.data.success) {
-        const { token, user } = res.data;
-        localStorage.setItem('token', token);
-        setAuth(user, token);
-        navigate('/dashboard', { replace: true });
+        localStorage.setItem('token', res.data.token);
+        localStorage.setItem('user', JSON.stringify(res.data.user));
+        window.location.href = '/dashboard';
       } else {
-        setErrorMsg('Invalid credentials');
+        setErrorMsg('Invalid login credentials.');
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('API Login fallback:', err);
-      setErrorMsg('Unable to verify login. Please check credentials.');
-    } finally {
+    })
+    .catch(() => {
+      setErrorMsg('Invalid login credentials.');
       setLoading(false);
-    }
+    });
   };
 
   return (
@@ -111,7 +102,7 @@ const Login = () => {
             disabled={loading}
             style={{ width: '100%', padding: '12px', backgroundColor: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '14px', marginTop: '6px' }}
           >
-            {loading ? 'Authenticating...' : 'Sign In'}
+            {loading ? 'Opening Unolo Dashboard...' : 'Sign In'}
           </button>
         </form>
 
