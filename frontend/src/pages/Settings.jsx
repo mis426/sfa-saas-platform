@@ -8,7 +8,7 @@ const Settings = () => {
 
   const [activeSubTab, setActiveSubTab] = useState('modules');
   
-  // State 1: Modules
+  // Phase 1 State: Modules Toggles
   const [modules, setModules] = useState({
     leaveManagement: true,
     expenses: true,
@@ -22,7 +22,7 @@ const Settings = () => {
     conveyances: true
   });
 
-  // State 2: Attendance Rules
+  // Phase 2 State: Attendance Rules
   const [attendanceRules, setAttendanceRules] = useState({
     gracePeriodMinutes: 15,
     strictMode: true,
@@ -32,7 +32,7 @@ const Settings = () => {
     allowManualPunch: false
   });
 
-  // State 3: Expense & Conveyance Rules
+  // Phase 3 State: Expense & Conveyance
   const [expenseRules, setExpenseRules] = useState({
     perKmReimbursementRate: 8,
     dailyFoodAllowanceLimit: 500,
@@ -40,37 +40,53 @@ const Settings = () => {
     categories: ['Travel', 'Meals', 'Accommodation', 'Office Supplies', 'Telephone Bill']
   });
 
-  // State 4: Tasks & BEAT
+  // Phase 4 State: Tasks & BEAT
   const [tasks, setTasks] = useState([]);
   const [newTaskName, setNewTaskName] = useState('');
+
+  // Phase 5 State: API Tokens & Integrations
+  const [tokens, setTokens] = useState([]);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [integrations, setIntegrations] = useState({
+    zohoCrm: true,
+    greytHr: false,
+    hrOne: true,
+    keka: false,
+    oracleCloud: false,
+    zohoBooks: true
+  });
 
   const [newCat, setNewCat] = useState('');
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState({ type: '', text: '' });
 
-  const fetchSettings = async () => {
+  const fetchAllSettings = async () => {
     try {
       const token = localStorage.getItem('token');
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [modRes, attRes, expRes, taskRes] = await Promise.all([
+      const [modRes, attRes, expRes, taskRes, tokenRes, intRes] = await Promise.all([
         axios.get('https://sfa-saas-platform.onrender.com/api/settings/modules', { headers }).catch(() => ({ data: modules })),
         axios.get('https://sfa-saas-platform.onrender.com/api/settings/attendance-rules', { headers }).catch(() => ({ data: attendanceRules })),
         axios.get('https://sfa-saas-platform.onrender.com/api/settings/expense-rules', { headers }).catch(() => ({ data: expenseRules })),
-        axios.get('https://sfa-saas-platform.onrender.com/api/settings/task-templates', { headers }).catch(() => ({ data: [] }))
+        axios.get('https://sfa-saas-platform.onrender.com/api/settings/task-templates', { headers }).catch(() => ({ data: [] })),
+        axios.get('https://sfa-saas-platform.onrender.com/api/settings/tokens', { headers }).catch(() => ({ data: [] })),
+        axios.get('https://sfa-saas-platform.onrender.com/api/settings/integrations', { headers }).catch(() => ({ data: integrations }))
       ]);
 
       if (modRes.data) setModules(modRes.data);
       if (attRes.data) setAttendanceRules(attRes.data);
       if (expRes.data) setExpenseRules(expRes.data);
       if (taskRes.data) setTasks(taskRes.data);
+      if (tokenRes.data) setTokens(tokenRes.data);
+      if (intRes.data) setIntegrations(intRes.data);
     } catch (err) {
       console.error('Fetch settings error:', err);
     }
   };
 
   useEffect(() => {
-    fetchSettings();
+    fetchAllSettings();
   }, []);
 
   const handleToggleModule = (key) => {
@@ -128,6 +144,32 @@ const Settings = () => {
     }
   };
 
+  const handleGenerateToken = async (e) => {
+    e.preventDefault();
+    if (!newKeyName.trim()) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post('https://sfa-saas-platform.onrender.com/api/settings/tokens', { keyName: newKeyName.trim() }, { headers: { Authorization: `Bearer ${token}` } });
+      setTokens([res.data.token, ...tokens]);
+      setNewKeyName('');
+      setMsg({ type: 'success', text: '🔑 API Access Key generated successfully!' });
+    } catch (err) {
+      setMsg({ type: 'error', text: 'Failed to generate token.' });
+    }
+  };
+
+  const handleToggleIntegration = async (key) => {
+    if (!isAdmin) return;
+    const updated = { ...integrations, [key]: !integrations[key] };
+    setIntegrations(updated);
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post('https://sfa-saas-platform.onrender.com/api/settings/integrations', updated, { headers: { Authorization: `Bearer ${token}` } });
+    } catch (err) {
+      console.error('Failed to update integration');
+    }
+  };
+
   const handleAddCategory = () => {
     if (!newCat.trim()) return;
     setExpenseRules({ ...expenseRules, categories: [...expenseRules.categories, newCat.trim()] });
@@ -150,15 +192,15 @@ const Settings = () => {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
       
-      {/* Settings Sub-Menu Sidebar */}
-      <div style={{ width: '220px', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0', padding: '20px 12px' }}>
-        <h3 style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', marginBottom: '16px', paddingLeft: '8px', fontWeight: 'bold' }}>Settings</h3>
+      {/* Settings Navigation Sub-Sidebar */}
+      <div style={{ width: '230px', backgroundColor: '#ffffff', borderRight: '1px solid #e2e8f0', padding: '20px 12px' }}>
+        <h3 style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', marginBottom: '16px', paddingLeft: '8px', fontWeight: 'bold' }}>Settings Panel</h3>
         {[
           { id: 'modules', label: '🎛️ Feature Modules' },
           { id: 'attendance', label: '⏰ Attendance Rules' },
           { id: 'expenses', label: '💸 Expense & Conveyance' },
           { id: 'tasks', label: '📋 Tasks & BEAT Plan' },
-          { id: 'api', label: '🔑 API Access Tokens' }
+          { id: 'api', label: '🔑 API Keys & Integration' }
         ].map(tab => (
           <button
             key={tab.id}
@@ -182,7 +224,7 @@ const Settings = () => {
         ))}
       </div>
 
-      {/* Main Workspace Panel */}
+      {/* Main Settings Panel View */}
       <div style={{ flex: 1, padding: '32px' }}>
         <div style={{ maxWidth: '900px', margin: '0 auto' }}>
           
@@ -192,7 +234,7 @@ const Settings = () => {
             </div>
           )}
 
-          {/* TAB 1: FEATURE MODULES */}
+          {/* TAB 1: FEATURE MODULES MASTER TOGGLES */}
           {activeSubTab === 'modules' && (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -271,7 +313,7 @@ const Settings = () => {
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Geo-fence Boundary Radius (Meters)</label>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>Geo-fence Radius (Meters)</label>
                     <input 
                       type="number" 
                       value={attendanceRules.geofenceRadiusMeters} 
@@ -285,7 +327,7 @@ const Settings = () => {
             </>
           )}
 
-          {/* TAB 3: EXPENSE RULES */}
+          {/* TAB 3: EXPENSE & ODOMETER CONVEYANCE */}
           {activeSubTab === 'expenses' && (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -319,7 +361,7 @@ const Settings = () => {
             </>
           )}
 
-          {/* TAB 4: TASKS & BEAT JOURNEY PLAN */}
+          {/* TAB 4: TASKS & BEAT PLAN */}
           {activeSubTab === 'tasks' && (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
@@ -335,13 +377,13 @@ const Settings = () => {
                 <form onSubmit={handleCreateTask} style={{ display: 'flex', gap: '12px', marginBottom: '20px', backgroundColor: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                   <input 
                     type="text" 
-                    placeholder="Task Template Name (e.g., Audit Shelf Display)" 
+                    placeholder="Task Template Name" 
                     value={newTaskName} 
                     onChange={(e) => setNewTaskName(e.target.value)} 
                     required
                     style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
                   />
-                  <button type="submit" style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>+ Add Task Template</button>
+                  <button type="submit" style={{ backgroundColor: '#2563eb', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>+ Add Task</button>
                 </form>
               )}
 
@@ -367,6 +409,94 @@ const Settings = () => {
                   </tbody>
                 </table>
               </div>
+            </>
+          )}
+
+          {/* TAB 5: API ACCESS TOKENS & INTEGRATIONS */}
+          {activeSubTab === 'api' && (
+            <>
+              <div style={{ marginBottom: '24px' }}>
+                <h1 style={{ margin: 0, fontSize: '24px', color: '#0f172a' }}>API Keys & CRM/HRMS Integrations</h1>
+                <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
+                  Manage access tokens and third-party enterprise integrations (Zoho CRM, GreytHR, HROne, Keka).
+                </p>
+              </div>
+
+              {/* Token Generator Form */}
+              {isAdmin && (
+                <form onSubmit={handleGenerateToken} style={{ display: 'flex', gap: '12px', marginBottom: '24px', backgroundColor: '#fff', padding: '16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Key Identifier / Description (e.g., SAP ERP Sync)" 
+                    value={newKeyName} 
+                    onChange={(e) => setNewKeyName(e.target.value)} 
+                    required
+                    style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1' }}
+                  />
+                  <button type="submit" style={{ backgroundColor: '#0284c7', color: '#fff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>+ Generate Token</button>
+                </form>
+              )}
+
+              {/* Active Tokens Table */}
+              <div style={{ backgroundColor: '#fff', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '32px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
+                      <th style={{ padding: '12px', textAlign: 'left' }}>Key Name</th>
+                      <th style={{ padding: '12px', textAlign: 'left' }}>Bearer Access Token</th>
+                      <th style={{ padding: '12px', textAlign: 'left' }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tokens.map((tk) => (
+                      <tr key={tk._id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '12px', fontWeight: 'bold' }}>{tk.keyName}</td>
+                        <td style={{ padding: '12px', fontFamily: 'monospace', color: '#2563eb' }}>{tk.token}</td>
+                        <td style={{ padding: '12px' }}>
+                          <span style={{ backgroundColor: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 'bold' }}>{tk.status}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Third-Party Integrations Toggles */}
+              <h3 style={{ fontSize: '16px', color: '#0f172a', marginBottom: '16px' }}>Third-Party CRM / HRMS Connectors</h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                {[
+                  { key: 'zohoCrm', name: 'Zoho CRM', desc: 'Sync accounts, leads, and activity reports' },
+                  { key: 'greytHr', name: 'GreytHR', desc: 'Sync attendance punch logs to GreytHR' },
+                  { key: 'hrOne', name: 'HROne', desc: 'EOD attendance & leave sync' },
+                  { key: 'keka', name: 'Keka HRMS', desc: 'Sync Attendance and Travel Claims' },
+                  { key: 'oracleCloud', name: 'Oracle Cloud', desc: 'Sync first check-in and last check-out' },
+                  { key: 'zohoBooks', name: 'Zoho Books', desc: 'Sync orders and invoice catalog' }
+                ].map((item) => (
+                  <div key={item.key} style={{ backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#0f172a' }}>{item.name}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{item.desc}</div>
+                    </div>
+                    <div
+                      onClick={() => handleToggleIntegration(item.key)}
+                      style={{
+                        width: '42px',
+                        height: '22px',
+                        backgroundColor: integrations[item.key] ? '#16a34a' : '#cbd5e1',
+                        borderRadius: '11px',
+                        padding: '2px',
+                        cursor: isAdmin ? 'pointer' : 'not-allowed',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justify: integrations[item.key] ? 'flex-end' : 'flex-start'
+                      }}
+                    >
+                      <div style={{ width: '18px', height: '18px', backgroundColor: '#fff', borderRadius: '50%' }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
             </>
           )}
 

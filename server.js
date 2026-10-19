@@ -29,7 +29,7 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ MongoDB Connected Successfully'))
   .catch((err) => console.error('❌ DB Connection Error:', err));
 
-// Global Stores
+// Global Stores with Permanent Seeded Data
 global.tenantsStore = global.tenantsStore || [
   {
     _id: 'tenant_acme_default',
@@ -56,6 +56,7 @@ global.clientUsersStore = global.clientUsersStore || [
   }
 ];
 
+// Phase 1: Feature Modules Master Switch Store
 global.sfaModulesStore = global.sfaModulesStore || {
   leaveManagement: true,
   expenses: true,
@@ -69,6 +70,7 @@ global.sfaModulesStore = global.sfaModulesStore || {
   conveyances: true
 };
 
+// Phase 2: Attendance Rules Engine Store
 global.sfaAttendanceRulesStore = global.sfaAttendanceRulesStore || {
   gracePeriodMinutes: 15,
   strictMode: true,
@@ -78,6 +80,7 @@ global.sfaAttendanceRulesStore = global.sfaAttendanceRulesStore || {
   allowManualPunch: false
 };
 
+// Phase 3: Expense & Odometer Conveyance Rules Store
 global.sfaExpenseRulesStore = global.sfaExpenseRulesStore || {
   perKmReimbursementRate: 8,
   dailyFoodAllowanceLimit: 500,
@@ -101,12 +104,26 @@ global.sfaExpenseClaimsStore = global.sfaExpenseClaimsStore || [
   }
 ];
 
-// Phase 4: Task Templates & BEAT Store
+// Phase 4: BEAT Plan & Task Templates Store
 global.sfaTaskTemplatesStore = global.sfaTaskTemplatesStore || [
   { _id: 'task_1', name: 'Add Store Branding Photo', status: 'Active', teamVisibility: 'All Teams' },
   { _id: 'task_2', name: 'New Outlet Onboarding Check', status: 'Active', teamVisibility: 'All Teams' },
   { _id: 'task_3', name: 'Stock Audit & Order Form', status: 'Active', teamVisibility: 'All Teams' }
 ];
+
+// Phase 5: API Access Tokens & Integrations Store
+global.sfaApiTokensStore = global.sfaApiTokensStore || [
+  { _id: 'token_1', keyName: 'ERP Primary Sync Key', token: 'vKey_live_99812a3b4c', createdAt: new Date(), status: 'Active' }
+];
+
+global.sfaIntegrationsStore = global.sfaIntegrationsStore || {
+  zohoCrm: true,
+  greytHr: false,
+  hrOne: true,
+  keka: false,
+  oracleCloud: false,
+  zohoBooks: true
+};
 
 global.auditLogsStore = global.auditLogsStore || [];
 global.billingHistoryStore = global.billingHistoryStore || [];
@@ -134,7 +151,7 @@ const authenticateToken = (req, res, next) => {
   });
 };
 
-// Auth Endpoint
+// Auth Login Endpoint
 app.post(['/api/auth/login', '/auth/login'], (req, res) => {
   const { email, password } = req.body;
   
@@ -177,7 +194,7 @@ app.post(['/api/auth/login', '/auth/login'], (req, res) => {
   return res.status(401).json({ error: 'Invalid email or password' });
 });
 
-// Settings & Feature Toggles
+// Phase 1 API: Modules Control
 app.get('/api/settings/modules', authenticateToken, (req, res) => res.json(global.sfaModulesStore));
 app.post('/api/settings/modules', authenticateToken, (req, res) => {
   if (req.user?.role !== 'admin' && req.user?.role !== 'superadmin') {
@@ -187,7 +204,7 @@ app.post('/api/settings/modules', authenticateToken, (req, res) => {
   res.json({ success: true, message: 'Module settings updated successfully!', modules: global.sfaModulesStore });
 });
 
-// Attendance Rules
+// Phase 2 API: Attendance Rules
 app.get('/api/settings/attendance-rules', authenticateToken, (req, res) => res.json(global.sfaAttendanceRulesStore));
 app.post('/api/settings/attendance-rules', authenticateToken, (req, res) => {
   if (req.user?.role !== 'admin' && req.user?.role !== 'superadmin') {
@@ -197,7 +214,7 @@ app.post('/api/settings/attendance-rules', authenticateToken, (req, res) => {
   res.json({ success: true, message: 'Attendance rules updated successfully!', rules: global.sfaAttendanceRulesStore });
 });
 
-// Expense Rules & Claims
+// Phase 3 API: Expense & Conveyance Rules
 app.get('/api/settings/expense-rules', authenticateToken, (req, res) => res.json(global.sfaExpenseRulesStore));
 app.post('/api/settings/expense-rules', authenticateToken, (req, res) => {
   if (req.user?.role !== 'admin' && req.user?.role !== 'superadmin') {
@@ -252,7 +269,7 @@ app.patch('/api/sfa/expenses/:id/status', authenticateToken, (req, res) => {
   res.status(404).json({ error: 'Claim not found' });
 });
 
-// Phase 4: Task Templates & BEAT Endpoints
+// Phase 4 API: Task Templates & BEAT Plan
 app.get('/api/settings/task-templates', authenticateToken, (req, res) => res.json(global.sfaTaskTemplatesStore));
 app.post('/api/settings/task-templates', authenticateToken, (req, res) => {
   if (req.user?.role !== 'admin' && req.user?.role !== 'superadmin') {
@@ -266,6 +283,32 @@ app.post('/api/settings/task-templates', authenticateToken, (req, res) => {
   };
   global.sfaTaskTemplatesStore.unshift(newTask);
   res.status(201).json({ success: true, task: newTask });
+});
+
+// Phase 5 API: API Access Tokens & Integrations
+app.get('/api/settings/tokens', authenticateToken, (req, res) => res.json(global.sfaApiTokensStore));
+app.post('/api/settings/tokens', authenticateToken, (req, res) => {
+  if (req.user?.role !== 'admin' && req.user?.role !== 'superadmin') {
+    return res.status(403).json({ error: 'Only Client Admin can generate tokens' });
+  }
+  const newToken = {
+    _id: 'token_' + Date.now(),
+    keyName: req.body.keyName || 'Generated API Key',
+    token: 'vKey_live_' + Math.random().toString(36).substr(2, 10),
+    createdAt: new Date(),
+    status: 'Active'
+  };
+  global.sfaApiTokensStore.unshift(newToken);
+  res.status(201).json({ success: true, token: newToken });
+});
+
+app.get('/api/settings/integrations', authenticateToken, (req, res) => res.json(global.sfaIntegrationsStore));
+app.post('/api/settings/integrations', authenticateToken, (req, res) => {
+  if (req.user?.role !== 'admin' && req.user?.role !== 'superadmin') {
+    return res.status(403).json({ error: 'Only Client Admin can modify integrations' });
+  }
+  global.sfaIntegrationsStore = { ...global.sfaIntegrationsStore, ...req.body };
+  res.json({ success: true, message: 'Integration toggles updated successfully!', integrations: global.sfaIntegrationsStore });
 });
 
 // Client Team & Billing
