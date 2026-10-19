@@ -29,7 +29,7 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log('✅ MongoDB Connected Successfully'))
   .catch((err) => console.error('❌ DB Connection Error:', err));
 
-// Global Stores with Seeded Accounts & Feature Toggles
+// Global Stores
 global.tenantsStore = global.tenantsStore || [
   {
     _id: 'tenant_acme_default',
@@ -77,6 +77,30 @@ global.sfaAttendanceRulesStore = global.sfaAttendanceRulesStore || {
   preventEarlyPunchOut: true,
   allowManualPunch: false
 };
+
+// Phase 3: Expense Rules & Claims Store
+global.sfaExpenseRulesStore = global.sfaExpenseRulesStore || {
+  perKmReimbursementRate: 8,
+  dailyFoodAllowanceLimit: 500,
+  dailyHotelAllowanceLimit: 2500,
+  categories: ['Travel', 'Meals', 'Accommodation', 'Office Supplies', 'Telephone Bill']
+};
+
+global.sfaExpenseClaimsStore = global.sfaExpenseClaimsStore || [
+  {
+    _id: 'exp_1',
+    userEmail: 'balwant@acme.com',
+    userName: 'Balwant Singh',
+    category: 'Travel',
+    amount: 320,
+    startKm: 1240,
+    endKm: 1280,
+    totalKm: 40,
+    notes: 'Visited Okhla Industrial Area Outlets',
+    status: 'Approved',
+    createdAt: new Date()
+  }
+];
 
 global.auditLogsStore = global.auditLogsStore || [];
 global.billingHistoryStore = global.billingHistoryStore || [];
@@ -147,11 +171,8 @@ app.post(['/api/auth/login', '/auth/login'], (req, res) => {
   return res.status(401).json({ error: 'Invalid email or password' });
 });
 
-// Settings & Module Toggles Endpoints
-app.get('/api/settings/modules', authenticateToken, (req, res) => {
-  res.json(global.sfaModulesStore);
-});
-
+// Settings & Feature Toggles
+app.get('/api/settings/modules', authenticateToken, (req, res) => res.json(global.sfaModulesStore));
 app.post('/api/settings/modules', authenticateToken, (req, res) => {
   if (req.user?.role !== 'admin' && req.user?.role !== 'superadmin') {
     return res.status(403).json({ error: 'Only Client Admin can update module settings' });
@@ -160,17 +181,72 @@ app.post('/api/settings/modules', authenticateToken, (req, res) => {
   res.json({ success: true, message: 'Module settings updated successfully!', modules: global.sfaModulesStore });
 });
 
-// Attendance Rules Endpoints
-app.get('/api/settings/attendance-rules', authenticateToken, (req, res) => {
-  res.json(global.sfaAttendanceRulesStore);
-});
-
+// Attendance Rules
+app.get('/api/settings/attendance-rules', authenticateToken, (req, res) => res.json(global.sfaAttendanceRulesStore));
 app.post('/api/settings/attendance-rules', authenticateToken, (req, res) => {
   if (req.user?.role !== 'admin' && req.user?.role !== 'superadmin') {
     return res.status(403).json({ error: 'Only Client Admin can update attendance rules' });
   }
   global.sfaAttendanceRulesStore = { ...global.sfaAttendanceRulesStore, ...req.body };
   res.json({ success: true, message: 'Attendance rules updated successfully!', rules: global.sfaAttendanceRulesStore });
+});
+
+// Phase 3: Expense Rules & Claims Endpoints
+app.get('/api/settings/expense-rules', authenticateToken, (req, res) => res.json(global.sfaExpenseRulesStore));
+app.post('/api/settings/expense-rules', authenticateToken, (req, res) => {
+  if (req.user?.role !== 'admin' && req.user?.role !== 'superadmin') {
+    return res.status(403).json({ error: 'Only Client Admin can update expense rules' });
+  }
+  global.sfaExpenseRulesStore = { ...global.sfaExpenseRulesStore, ...req.body };
+  res.json({ success: true, message: 'Expense limits updated successfully!', rules: global.sfaExpenseRulesStore });
+});
+
+app.get('/api/sfa/expenses', authenticateToken, (req, res) => {
+  res.json(global.sfaExpenseClaimsStore);
+});
+
+app.post('/api/sfa/expenses', authenticateToken, (req, res) => {
+  const { category, amount, startKm, endKm, notes } = req.body;
+  let computedAmount = parseFloat(amount) || 0;
+  let totalKm = 0;
+
+  if (category === 'Travel' && startKm && endKm) {
+    const sKm = parseFloat(startKm) || 0;
+    const eKm = parseFloat(endKm) || 0;
+    if (eKm > sKm) {
+      totalKm = eKm - sKm;
+      computedAmount = totalKm * (global.sfaExpenseRulesStore.perKmReimbursementRate || 8);
+    }
+  }
+
+  const newClaim = {
+    _id: 'exp_' + Date.now(),
+    userEmail: req.user.email,
+    userName: req.user.name || 'Sales Rep',
+    category,
+    amount: computedAmount,
+    startKm: parseFloat(startKm) || 0,
+    endKm: parseFloat(endKm) || 0,
+    totalKm,
+    notes,
+    status: 'Pending',
+    createdAt: new Date()
+  };
+
+  global.sfaExpenseClaimsStore.unshift(newClaim);
+  res.status(201).json({ success: true, claim: newClaim });
+});
+
+app.patch('/api/sfa/expenses/:id/status', authenticateToken, (req, res) => {
+  if (req.user?.role !== 'admin' && req.user?.role !== 'superadmin') {
+    return res.status(403).json({ error: 'Only Client Admin can approve claims' });
+  }
+  const claim = global.sfaExpenseClaimsStore.find(c => c._id === req.params.id);
+  if (claim) {
+    claim.status = req.body.status || 'Approved';
+    return res.json({ success: true, claim });
+  }
+  res.status(404).json({ error: 'Claim not found' });
 });
 
 // Client Team & Billing
@@ -219,7 +295,7 @@ app.post('/api/billing/upgrade-seats', authenticateToken, (req, res) => {
   res.json({ success: true, message: `Capacity expanded by +${seatsToAdd} seat(s)!`, invoice });
 });
 
-// SFA Endpoints
+// SFA Core Endpoints
 app.get('/api/sfa/analytics', authenticateToken, (req, res) => {
   const totalRevenue = global.sfaOrdersStore.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
   const totalLeads = global.sfaLeadsStore.length;
