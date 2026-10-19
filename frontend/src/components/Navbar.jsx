@@ -3,55 +3,89 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 
 const Navbar = () => {
+  const { user, token, logout } = useAuthStore();
   const navigate = useNavigate();
-  const { user, logout } = useAuthStore();
-  const isAdmin = user?.role?.toLowerCase() === 'admin' || user?.role?.toLowerCase() === 'superadmin';
 
   const handleLogout = () => {
+    logout();
     localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    if (logout) logout();
     navigate('/login');
   };
 
+  const isAuthenticated = Boolean(user && (token || localStorage.getItem('token')));
+
   return (
-    <div style={{ backgroundColor: '#0f172a', padding: '12px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#fff', fontFamily: 'Inter, sans-serif' }}>
-      
+    <div style={{
+      height: '50px',
+      backgroundColor: '#0284c7',
+      color: '#ffffff',
+      display: 'flex',
+      justify: 'space-between',
+      alignItems: 'center',
+      padding: '0 20px',
+      fontFamily: 'Inter, sans-serif'
+    }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-        <Link to="/" style={{ textDecoration: 'none', color: '#38bdf8', fontWeight: 'bold', fontSize: '18px' }}>
+        <Link to="/sfa" style={{ color: '#ffffff', fontWeight: 'bold', fontSize: '18px', textDecoration: 'none' }}>
           SaaS Enterprise
         </Link>
-
-        {/* Hide Main Dashboard link for standard field sales reps */}
-        {isAdmin && (
-          <Link to="/dashboard" style={{ textDecoration: 'none', color: '#94a3b8', fontSize: '14px', fontWeight: '500' }}>
-            Main Dashboard
-          </Link>
-        )}
-
-        <Link to="/sfa" style={{ textDecoration: 'none', color: '#fff', fontSize: '14px', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <span style={{ fontSize: '13px', backgroundColor: '#0369a1', padding: '3px 8px', borderRadius: '4px' }}>
           🎯 SFA Hub
-        </Link>
+        </span>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-        {user ? (
+      <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+        {isAuthenticated ? (
           <>
-            <span style={{ fontSize: '13px', color: '#cbd5e1' }}>{user.email}</span>
-            <button 
-              onClick={handleLogout} 
-              style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+            <span style={{ fontSize: '13px', color: '#e0f2fe' }}>
+              👤 {user?.email || 'Logged In'} ({user?.role || 'user'})
+            </span>
+
+            {user?.role === 'superadmin' && (
+              <Link to="/superadmin" style={{ color: '#fff', fontSize: '13px', textDecoration: 'none', fontWeight: 'bold' }}>
+                SuperAdmin Panel
+              </Link>
+            )}
+
+            {(user?.role === 'admin' || user?.role === 'superadmin') && (
+              <Link to="/settings" style={{ color: '#fff', fontSize: '13px', textDecoration: 'none', fontWeight: 'bold' }}>
+                ⚙️ Settings
+              </Link>
+            )}
+
+            <button
+              onClick={handleLogout}
+              style={{
+                backgroundColor: '#ef4444',
+                color: '#ffffff',
+                border: 'none',
+                padding: '6px 14px',
+                borderRadius: '6px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
             >
               Logout
             </button>
           </>
         ) : (
-          <Link to="/login" style={{ textDecoration: 'none', backgroundColor: '#2563eb', color: '#fff', padding: '6px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold' }}>
+          <Link
+            to="/login"
+            style={{
+              backgroundColor: '#2563eb',
+              color: '#ffffff',
+              padding: '6px 16px',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              textDecoration: 'none',
+              fontSize: '13px'
+            }}
+          >
             Login
           </Link>
         )}
       </div>
-
     </div>
   );
 };
