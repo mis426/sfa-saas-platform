@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 
 const Login = () => {
-  const [email, setEmail] = useState('mis@actionlifestyle.com');
-  const [password, setPassword] = useState('mis@123');
+  const [email, setEmail] = useState('clientadmin@acme.com');
+  const [password, setPassword] = useState('acmepassword123');
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -18,9 +18,10 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // Extended timeout to give Render server full 35 seconds to wake up
+      // Step 1: Health Ping to Wake Render Server Instance
       await axios.get('https://sfa-saas-platform.onrender.com/health', { timeout: 35000 }).catch(() => {});
 
+      // Step 2: Submit Authentication Request
       const res = await axios.post('https://sfa-saas-platform.onrender.com/api/auth/login', {
         email: email.trim(),
         password: password.trim()
@@ -33,8 +34,6 @@ const Login = () => {
 
         if (user.role === 'superadmin') {
           navigate('/superadmin');
-        } else if (user.role === 'admin') {
-          navigate('/dashboard');
         } else {
           navigate('/dashboard');
         }
@@ -44,7 +43,7 @@ const Login = () => {
       if (err.response && err.response.data && err.response.data.error) {
         setErrorMsg(err.response.data.error);
       } else {
-        setErrorMsg('Server status: Activating backend instance. Please wait 10 seconds and click Sign In again.');
+        setErrorMsg('Backend warm-up in progress. Please wait 10 seconds and click Sign In again.');
       }
     } finally {
       setLoading(false);
@@ -59,8 +58,8 @@ const Login = () => {
           <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', backgroundColor: '#2563eb', color: '#fff', borderRadius: '10px', fontSize: '24px', fontWeight: 'bold', marginBottom: '10px' }}>
             U
           </div>
-          <h2 style={{ margin: 0, color: '#0f172a', fontSize: '22px' }}>Unolo Dashboard Login</h2>
-          <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>Enterprise Field Force Platform</p>
+          <h2 style={{ margin: 0, color: '#0f172a', fontSize: '22px' }}>Unolo Enterprise Login</h2>
+          <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>Realtime Field Force Portal</p>
         </div>
 
         {errorMsg && (
@@ -76,7 +75,7 @@ const Login = () => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="mis@actionlifestyle.com"
+              placeholder="clientadmin@acme.com"
               required
               style={{ width: '100%', padding: '10px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', boxSizing: 'border-box', fontSize: '14px' }}
             />
@@ -99,13 +98,13 @@ const Login = () => {
             disabled={loading}
             style={{ width: '100%', padding: '12px', backgroundColor: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', marginTop: '6px' }}
           >
-            {loading ? 'Waking Server & Authenticating...' : 'Sign In'}
+            {loading ? 'Authenticating...' : 'Sign In'}
           </button>
         </form>
 
         <div style={{ marginTop: '20px', padding: '10px', backgroundColor: '#f8fafc', borderRadius: '6px', fontSize: '11px', color: '#64748b', textAlign: 'center' }}>
-          <div><strong>Unolo Admin:</strong> mis@actionlifestyle.com</div>
-          <div><strong>Password:</strong> mis@123</div>
+          <div><strong>Client Admin:</strong> clientadmin@acme.com</div>
+          <div><strong>Password:</strong> acmepassword123</div>
         </div>
 
       </div>

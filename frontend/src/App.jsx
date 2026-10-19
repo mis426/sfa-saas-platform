@@ -15,15 +15,17 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         
+        {/* Main Unolo Realtime Dashboard Suite */}
         <Route path="/dashboard" element={
           <ProtectedRoute>
             <Dashboard />
           </ProtectedRoute>
         } />
 
+        {/* Alias Route to ensure landing on Realtime Dashboard */}
         <Route path="/sfa" element={
           <ProtectedRoute>
-            <SFADashboard />
+            <Dashboard />
           </ProtectedRoute>
         } />
 
@@ -39,7 +41,7 @@ function App() {
           </ProtectedRoute>
         } />
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Router>
   );
