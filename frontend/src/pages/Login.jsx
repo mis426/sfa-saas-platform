@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
@@ -12,38 +12,41 @@ const Login = () => {
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
 
+  // Clear stale tokens on login screen mount
+  useEffect(() => {
+    localStorage.removeItem('token');
+  }, []);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMsg('');
     setLoading(true);
 
     try {
-      // Step 1: Health Ping to Wake Render Server Instance
-      await axios.get('https://sfa-saas-platform.onrender.com/health', { timeout: 35000 }).catch(() => {});
-
-      // Step 2: Submit Authentication Request
       const res = await axios.post('https://sfa-saas-platform.onrender.com/api/auth/login', {
         email: email.trim(),
         password: password.trim()
-      }, { timeout: 35000 });
+      }, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 15000
+      });
 
-      if (res.data.success) {
+      if (res.data && res.data.success) {
         const { token, user } = res.data;
         localStorage.setItem('token', token);
         setAuth(user, token);
-
-        if (user.role === 'superadmin') {
-          navigate('/superadmin');
-        } else {
-          navigate('/dashboard');
-        }
+        navigate('/dashboard', { replace: true });
+      } else {
+        setErrorMsg('Invalid login response from server.');
       }
     } catch (err) {
       console.error('Login error:', err);
       if (err.response && err.response.data && err.response.data.error) {
         setErrorMsg(err.response.data.error);
+      } else if (err.code === 'ECONNABORTED') {
+        setErrorMsg('Request timed out. Please click Sign In again.');
       } else {
-        setErrorMsg('Backend warm-up in progress. Please wait 10 seconds and click Sign In again.');
+        setErrorMsg('Unable to connect to backend server. Please retry.');
       }
     } finally {
       setLoading(false);
@@ -96,7 +99,7 @@ const Login = () => {
           <button
             type="submit"
             disabled={loading}
-            style={{ width: '100%', padding: '12px', backgroundColor: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px', marginTop: '6px' }}
+            style={{ width: '100%', padding: '12px', backgroundColor: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: loading ? 'not-allowed' : 'pointer', fontSize: '14px', marginTop: '6px' }}
           >
             {loading ? 'Authenticating...' : 'Sign In'}
           </button>
