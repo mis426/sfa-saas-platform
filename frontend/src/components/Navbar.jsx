@@ -6,13 +6,14 @@ const Navbar = () => {
   const { user, token, logout } = useAuthStore();
   const navigate = useNavigate();
 
+  const savedToken = localStorage.getItem('token');
+  const isAuthenticated = Boolean(user || savedToken);
+
   const handleLogout = () => {
     logout();
     localStorage.removeItem('token');
     navigate('/login');
   };
-
-  const isAuthenticated = Boolean(user && (token || localStorage.getItem('token')));
 
   return (
     <div style={{
@@ -37,8 +38,8 @@ const Navbar = () => {
       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
         {isAuthenticated ? (
           <>
-            <span style={{ fontSize: '13px', color: '#e0f2fe' }}>
-              👤 {user?.email || 'Logged In'} ({user?.role || 'user'})
+            <span style={{ fontSize: '13px', color: '#e0f2fe', fontWeight: 'bold' }}>
+              👤 {user?.email || 'Logged In User'}
             </span>
 
             {user?.role === 'superadmin' && (
